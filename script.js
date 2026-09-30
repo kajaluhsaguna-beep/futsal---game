@@ -1566,18 +1566,64 @@ async function netLeave() {
   const nr = NET.nr; NET.nr = null; NET.role = '';
   if (nr) { try { await nr.leave(); } catch (e) {} }
 }
+/* Mabar tanpa server sendiri: PeerJS (peer-to-peer) meniru API room dengan kode 4 huruf */
+const PeerRoom = {
+  async join(role, code) {
+    if (!window.Peer) throw { code: 'peerjs-tidak-dimuat' };
+    const hostId = 'futsalgame-' + code.toLowerCase(), isHost = role === 'host';
+    const meId = isHost ? 'H' : 'G', otherId = isHost ? 'G' : 'H';
+    const peer = new Peer(isHost ? hostId : undefined, { debug: 0 });
+    const st = { mine: {}, theirs: {}, conn: null, subs: new Set(), errs: new Set(), closed: false };
+    const list = () => { const a = [{ peer: meId, isMe: true, sameTab: true, presence: st.mine }]; if (st.conn && st.conn.open) a.push({ peer: otherId, isMe: false, sameTab: false, presence: st.theirs }); return a; };
+    const emit = () => st.subs.forEach(f => { try { f({ peers: list(), joined: [], left: [] }); } catch (e) {} });
+    const fail = e => { if (!st.closed) st.errs.forEach(f => { try { f(e); } catch (x) {} }); };
+    const merge = (o, p) => { for (const k in p) { if (p[k] === null) delete o[k]; else o[k] = p[k]; } };
+    const bind = c => {
+      st.conn = c;
+      c.on('open', () => { try { c.send({ p: st.mine }); } catch (e) {} emit(); });
+      c.on('data', d => { if (d && d.p) { merge(st.theirs, d.p); emit(); } });
+      c.on('close', () => { if (st.conn === c) { st.conn = null; st.theirs = {}; emit(); } });
+      c.on('error', e => fail({ code: e && e.type || 'conn' }));
+    };
+    await new Promise((res, rej) => {
+      const to = setTimeout(() => rej({ code: 'timeout' }), 12000);
+      peer.on('error', e => { clearTimeout(to); rej({ code: e && e.type || 'peer' }); });
+      peer.on('open', () => {
+        if (isHost) { clearTimeout(to); res(); return; }
+        const c = peer.connect(hostId, { reliable: true, serialization: 'json' });
+        c.on('open', () => { clearTimeout(to); res(); });
+        bind(c);
+      });
+    });
+    peer.removeAllListeners('error');
+    peer.on('error', e => fail({ code: e && e.type || 'peer' }));
+    peer.on('disconnected', () => { if (!st.closed) { try { peer.reconnect(); } catch (e) {} } });
+    if (isHost) peer.on('connection', c => { if (st.conn && st.conn.open) { c.close(); return; } bind(c); });
+    return {
+      presence: patch => { merge(st.mine, patch); if (st.conn && st.conn.open) { try { st.conn.send({ p: patch }); } catch (e) {} } return Promise.resolve(); },
+      peers: () => list(),
+      onPeers: (h, err) => { st.subs.add(h); if (err) st.errs.add(err); return () => { st.subs.delete(h); if (err) st.errs.delete(err); }; },
+      leave: async () => { st.closed = true; try { st.conn && st.conn.close(); } catch (e) {} try { peer.destroy(); } catch (e) {} }
+    };
+  }
+};
 async function netJoin(role, code) {
   olNote('Menghubungkan…');
   try {
     const cl = window.claude, room = cl && cl.use ? await cl.use('room') : null;
-    if (!room) { olNote('Mode online hanya berjalan saat halaman dibuka dari claude.ai sebagai anggota atau tamu yang diundang. Kamu tetap bisa bermain berdua di satu perangkat.'); return false; }
-    await netLeave();
-    const nr = await room.join('ns-' + code.toLowerCase());
+    let nr;
+    if (room) { await netLeave(); nr = await room.join('ns-' + code.toLowerCase()); }
+    else if (window.Peer) { await netLeave(); nr = await PeerRoom.join(role, code); }
+    else { olNote('Mode online tidak tersedia (perlu internet). Kamu tetap bisa bermain berdua di satu perangkat.'); return false; }
     Object.assign(NET, { nr, code, role, ready: 0, gid: 0, lastGid: 0, lastN: -1, snap: null, n: 0, lostT: 0 });
     NET.unsubs = [nr.onPeers(onPeers, e => netFail(e))];
     netHello(); olNote('');
     return true;
-  } catch (e) { olNote('Gagal masuk ruangan (' + (e && e.code ? e.code : 'error') + '). Coba lagi.'); return false; }
+  } catch (e) {
+    const k = e && e.code;
+    olNote(k === 'peer-unavailable' ? 'Ruangan dengan kode itu tidak ditemukan. Pastikan kode benar dan temanmu sudah membuat ruangan.' : k === 'unavailable-id' ? 'Kode sedang dipakai. Buat ruangan lagi.' : k === 'timeout' ? 'Koneksi terlalu lama. Cek internet lalu coba lagi.' : 'Gagal masuk ruangan (' + (k || 'error') + '). Coba lagi.');
+    try { await netLeave(); } catch (x) {} return false;
+  }
 }
 function netFail(e) { olNote('Koneksi ruangan terputus (' + (e && e.code) + ').'); if (G && G.net) netLost('Koneksi terputus.'); }
 function netHello() { if (NET.nr) NET.nr.presence({ role: NET.role, tm: P.team, fm: P.form, st: P.squad.slice(0, 2), rd: NET.ready }).catch(() => {}); }
