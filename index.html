@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#070420">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Futsal Game</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,800;1,800&family=Saira:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="boot" aria-hidden="true"></div>
+  <div id="welcome" role="status"><div class="wa">⚽</div><div><b>Selamat datang kembali</b><small>Siap bertanding?</small></div></div>
+
+  <!-- SPLASH PEMBUKA -->
+  <div id="splash" role="button" tabindex="0" aria-label="Futsal Game. Sentuh untuk mulai">
+    <svg class="sp-court" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="34" pathLength="1"/><line class="c2" x1="100" y1="6" x2="100" y2="194" pathLength="1"/><rect x="6" y="6" width="188" height="188" rx="6" pathLength="1"/></svg>
+    <i class="sp-streak" style="top:24%;--d:.2s"></i><i class="sp-streak" style="top:41%;--d:.45s"></i><i class="sp-streak" style="top:63%;--d:.3s"></i><i class="sp-streak" style="top:78%;--d:.6s"></i>
+    <div class="sp-ring"></div>
+    <div class="sp-stack">
+      <div class="sp-ball"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="#f4f6ff" stroke="#22e6ff" stroke-width="3"/><polygon points="32,20 43,28 39,41 25,41 21,28" fill="#120a45"/><path d="M32 20V6M43 28l13-4M39 41l8 11M25 41l-8 11M21 28L8 24" stroke="#ff3fd2" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <h1 class="sp-title"><span class="a">FUTSAL</span><span class="b">GAME</span></h1>
+      <p class="sp-tag">Lima lawan lima. Bola neon. Satu gol menentukan.</p>
+      <div class="sp-bar"><i></i></div>
+      <p class="sp-go">Sentuh layar untuk mulai</p>
+    </div>
+  </div>
+
+  <!-- LOBI -->
+  <section id="lobby" class="screen active">
+    <div class="bokeh" aria-hidden="true">
+      <i style="--x:4%;--y:10%;--s:150px;--c:#22e6ff;--d:0s"></i>
+      <i style="--x:70%;--y:-6%;--s:210px;--c:#ff3fd2;--d:-3s"></i>
+      <i style="--x:86%;--y:60%;--s:130px;--c:#7a3cff;--d:-6s"></i>
+      <i style="--x:40%;--y:72%;--s:190px;--c:#ff3fd2;--d:-2s"></i>
+      <i style="--x:-4%;--y:64%;--s:170px;--c:#7a3cff;--d:-8s"></i>
+      <i style="--x:52%;--y:6%;--s:70px;--c:#22e6ff;--d:-5s"></i>
+      <i style="--x:24%;--y:40%;--s:56px;--c:#ff3fd2;--d:-9s"></i>
+    </div>
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22e6ff"/><stop offset="1" stop-color="#ff3fd2"/></linearGradient></defs><circle cx="32" cy="32" r="26" fill="none" stroke="url(#lg)" stroke-width="7"/><rect x="14" y="28" width="36" height="8" rx="4" fill="url(#lg)"/></svg>
+      <h1><span class="l1">FUTSAL</span><span class="l2">GAME</span></h1>
+      <p>Futsal neon 5 lawan 5. Kuasai bola, lewati lawan, tembak ke gawang.</p>
+    </div>
+    <nav class="menu" aria-label="Menu utama">
+      <button class="mbtn" data-go="teams"><b>Pertandingan</b><small>5 lawan 5 melawan komputer</small></button>
+      <button class="mbtn" data-go="training"><b>Latihan</b><small>Bebas, lawan kiper, atau lolos dari bek</small></button>
+      <button class="mbtn" data-go="events"><b>Event</b><small>Liga dan Piala Dunia</small></button>
+      <button class="mbtn" data-go="online"><b>Main bareng teman</b><small>Lawan temanmu, online atau di satu perangkat</small></button>
+      <button class="mbtn" data-go="shop"><b>Toko pemain</b><small>Beli karakter bintang dari berbagai negara</small></button>
+      <button class="mbtn" data-go="howto"><b>Cara bermain</b><small>Kontrol dan aturan singkat</small></button>
+    </nav>
+    <div class="coinchip" id="coinLobby"><i></i><span data-coins>0</span></div>
+    <button class="hbtn" id="fsBtn" aria-label="Layar penuh" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <div class="hintp">Putar ponsel ke landscape agar lapangan terlihat lebih luas.</div>
+  </section>
+
+  <!-- PILIH TIM -->
+  <section id="teams" class="screen sub">
+    <div class="panel wide">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <div class="steps"><b>1 Tim</b> · 2 Formasi · 3 Atur</div>
+      <h2>Pilih tim negara</h2>
+      <div class="vs"><div class="vsside" id="vsA"></div><b>VS</b><div class="vsside" id="vsB"></div></div>
+      <div class="seg" id="teamSide"><button data-v="0" class="sel">Timmu</button><button data-v="1">Lawan</button></div>
+      <div class="teamgrid" id="teamGrid"></div>
+      <button class="go" data-go="lineup">Lanjut: Formasi</button>
+    </div>
+  </section>
+
+  <!-- FORMASI & SKUAD -->
+  <section id="lineup" class="screen sub">
+    <div class="panel wide">
+      <button class="back" id="lnBack" data-go="teams">‹ Kembali</button>
+      <div class="steps" id="lnSteps">1 Tim · <b>2 Formasi</b> · 3 Atur</div>
+      <h2>Formasi dan skuad</h2>
+      <div class="lineWrap">
+        <div><div id="formPrev"></div></div>
+        <div>
+          <div class="chips" id="formRow"></div>
+          <p class="hint" id="formDesc"></p>
+          <h3>Pemain bintang (maks. 2)</h3>
+          <div id="squadList"></div>
+        </div>
+      </div>
+      <button class="go" id="lnNext" data-go="match">Lanjut: Pengaturan</button>
+    </div>
+  </section>
+
+  <!-- TOKO -->
+  <section id="shop" class="screen sub">
+    <div class="panel wide">
+      <div class="shophead"><button class="back" data-go="lobby">‹ Kembali</button><div class="coinchip"><i></i><span data-coins>0</span></div></div>
+      <h2>Toko pemain</h2>
+      <p class="hint">Nama pemain yang sudah kamu beli bisa diganti lewat tombol Ubah nama.</p>
+      <div class="chips scroll" id="shopTabs"></div>
+      <div class="chips" id="shopPos" style="margin-top:8px"></div>
+      <p class="hint" id="shopCount"></p>
+      <div class="shopgrid" id="shopGrid"></div>
+    </div>
+  </section>
+
+  <!-- MAIN BARENG TEMAN -->
+  <section id="online" class="screen sub">
+    <div class="panel wide">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <h2>Main bareng teman</h2>
+      <div id="olMenu">
+        <div class="drills">
+          <button class="mbtn" id="olHost"><b>Buat ruangan</b><small>Kamu jadi tuan rumah, lalu berikan kode ke temanmu</small></button>
+          <div class="joinrow"><input id="olCode" maxlength="4" placeholder="KODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Kode ruangan"><button class="go" id="olJoin">Gabung</button></div>
+          <button class="mbtn" id="olLocal"><b>Berdua di satu perangkat</b><small>Butuh keyboard. Pemain 1 pakai WASD, pemain 2 pakai tombol panah</small></button>
+        </div>
+        <p class="hint" id="olLocalInfo"></p>
+        <p class="hint">Main online: buka halaman ini dari claude.ai lalu undang temanmu lewat menu bagikan. Teman yang bergabung harus masuk dengan akun yang diundang. Tautan publik tidak bisa dipakai untuk online.</p>
+      </div>
+      <div id="olRoom" hidden>
+        <div class="codebox"><small>Kode ruangan</small><b id="rmCode">----</b></div>
+        <div id="rmStatus"></div>
+        <div class="row"><label for="rmTeam">Timmu</label><select id="rmTeam"></select></div>
+        <div class="row"><label for="rmForm">Formasi</label><select id="rmForm"></select></div>
+        <p class="hint" id="rmSquad"></p>
+        <button class="cbtn" id="rmLineup" style="width:100%">Ubah skuad bintang</button>
+        <div class="row" id="rmDurRow"><label for="rmDur">Durasi (ditentukan tuan rumah)</label><select id="rmDur"><option value="120">2 menit</option><option value="180">3 menit</option><option value="300">5 menit</option></select></div>
+        <button class="go" id="rmAction">Mulai pertandingan</button>
+        <button class="cbtn" id="rmLeave" style="width:100%;margin-top:8px">Keluar dari ruangan</button>
+      </div>
+      <p class="hint" id="olNote"></p>
+    </div>
+  </section>
+
+  <!-- EVENT -->
+  <section id="events" class="screen sub">
+    <div class="panel wide">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <h2>Event</h2>
+      <div class="drills">
+        <button class="mbtn" data-ev="lg"><b>Liga 8 Tim</b><small id="evLgSub"></small></button>
+        <button class="mbtn" data-ev="wc"><b>Piala Dunia 16 Tim</b><small id="evWcSub"></small></button>
+      </div>
+      <p class="hint">Pakai tim negara, formasi, dan pemain bintang pilihanmu. Kemajuan event tersimpan otomatis, dan juara mendapat hadiah koin besar.</p>
+    </div>
+  </section>
+
+  <section id="evdetail" class="screen sub">
+    <div class="panel wide">
+      <button class="back" data-go="events">‹ Event</button>
+      <h2 id="evTitle"></h2>
+      <div id="evBody"></div>
+      <div class="row"><label>Durasi tiap laga</label>
+        <div class="seg" data-key="dur"><button data-v="120">2 menit</button><button data-v="180">3 menit</button><button data-v="300">5 menit</button></div></div>
+      <div class="row"><label>Tingkat lawan</label>
+        <div class="seg" data-key="diff"><button data-v="0">Mudah</button><button data-v="1">Sedang</button><button data-v="2">Sulit</button></div></div>
+      <button class="go" id="evPlay">Mulai event</button>
+      <div class="evActions"><button class="cbtn" id="evLineup">Formasi dan skuad</button><button class="cbtn" id="evReset">Batalkan event</button></div>
+    </div>
+  </section>
+
+  <!-- SETUP PERTANDINGAN -->
+  <section id="match" class="screen sub">
+    <div class="panel">
+      <button class="back" data-go="lineup">‹ Kembali</button>
+      <div class="steps">1 Tim · 2 Formasi · <b>3 Atur</b></div>
+      <h2>Atur pertandingan</h2>
+      <div class="row"><label>Durasi</label>
+        <div class="seg" data-key="dur"><button data-v="120">2 menit</button><button data-v="180">3 menit</button><button data-v="300">5 menit</button></div></div>
+      <div class="row"><label>Tingkat lawan</label>
+        <div class="seg" data-key="diff"><button data-v="0">Mudah</button><button data-v="1">Sedang</button><button data-v="2">Sulit</button></div></div>
+      <div class="row"><label>Grafik</label>
+        <div class="seg" data-key="gfx"><button data-v="0">Rendah</button><button data-v="1">Sedang</button><button data-v="2">Tinggi</button></div></div>
+      <div class="row"><label>Tampilan</label>
+        <div class="seg" data-key="view"><button data-v="1">3D</button><button data-v="0">2D</button></div></div>
+      <div class="row"><label>Suara</label>
+        <div class="seg" data-key="sound"><button data-v="1">Nyala</button><button data-v="0">Mati</button></div></div>
+      <button class="go" id="goMatch">Kickoff</button>
+    </div>
+  </section>
+
+  <!-- PILIH LATIHAN -->
+  <section id="training" class="screen sub">
+    <div class="panel">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <h2>Pilih latihan</h2>
+      <div class="drills">
+        <button class="mbtn" data-drill="free"><b>Latihan bebas</b><small>Lapangan kosong. Coba dribel, operan, dan tembakan.</small></button>
+        <button class="mbtn" data-drill="keeper"><b>Lawan kiper</b><small>Latih tembakan ke gawang yang dijaga kiper.</small></button>
+        <button class="mbtn" data-drill="defend"><b>Lawan bertahan</b><small>Lolos dari 3 bek lalu kalahkan kiper.</small></button>
+      </div>
+      <div class="row"><label>Grafik</label>
+        <div class="seg" data-key="gfx"><button data-v="0">Rendah</button><button data-v="1">Sedang</button><button data-v="2">Tinggi</button></div></div>
+      <div class="row"><label>Tampilan</label>
+        <div class="seg" data-key="view"><button data-v="1">3D</button><button data-v="0">2D</button></div></div>
+      <p class="hint">Latihan memakai tim negara dan pemain bintang pertama di skuadmu.</p>
+    </div>
+  </section>
+
+  <!-- CARA BERMAIN -->
+  <section id="howto" class="screen sub">
+    <div class="panel howto">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <h2>Cara bermain</h2>
+      <p><b>Tujuan:</b> cetak gol lebih banyak dari lawan sebelum waktu habis. Kamu memegang pemain yang paling dekat dengan bola, dan pemain berganti otomatis.</p>
+      <p><b>Tim dan toko:</b> pilih negara untukmu dan lawan, atur formasi, lalu mainkan. Setiap gol dan kemenangan memberi koin. Tiap negara punya 30 pemain di toko. Belanjakan koin untuk membeli pemain dengan kecepatan, tembakan, dan tekel lebih baik, lalu pasang di skuad (maks. 2).</p>
+      <p><b>Event:</b> ikuti Liga 8 tim atau Piala Dunia 16 tim. Kamu memainkan laga timmu sendiri, hasil laga lain disimulasikan, dan juara mendapat hadiah koin besar.</p>
+      <p><b>Layar sentuh:</b> geser di sisi kiri layar untuk bergerak. Tombol di kanan: Tembak (tahan untuk menambah tenaga), Operan, Lambung, Tekel, Lari, dan Ganti pemain.</p>
+      <div class="keys">
+        <kbd>WASD / Panah</kbd><span>Bergerak</span>
+        <kbd>J / Spasi</kbd><span>Operan</span>
+        <kbd>I</kbd><span>Operan lambung (melewati lawan)</span>
+        <kbd>K</kbd><span>Tembak (tahan untuk tenaga)</span>
+        <kbd>O</kbd><span>Tekel meluncur</span>
+        <kbd>Shift</kbd><span>Lari</span>
+        <kbd>L</kbd><span>Ganti pemain</span>
+        <kbd>P / Esc</kbd><span>Jeda</span>
+      </div>
+      <p>Tombol Tekel (atau Operan/Tembak saat tanpa bola) membuat pemain meluncur merebut bola. Lapangan dikelilingi papan pantul, jadi bola tidak keluar.</p>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="screen">
+    <canvas id="cv3"></canvas>
+    <canvas id="cv"></canvas>
+    <div id="hud">
+      <button class="hbtn" id="btnPause" aria-label="Jeda"><svg width="18" height="18" viewBox="0 0 18 18"><rect x="3" y="2" width="4" height="14" rx="1.5" fill="#fff"/><rect x="11" y="2" width="4" height="14" rx="1.5" fill="#fff"/></svg></button>
+      <div id="score"><span class="tn" id="nameA">KAMU</span><span class="n" id="s0">0</span><span id="clock">3:00</span><span class="n" id="s1">0</span><span class="tn" id="nameB">LAWAN</span></div>
+      <div id="hudR"><button class="hbtn pill" id="btnReset" hidden>Reset bola</button></div>
+    </div>
+    <div id="banner"></div>
+
+    <div class="touch" id="joyZone"></div>
+    <div id="joyBase"><div id="joyKnob"></div></div>
+    <div class="touch" id="btns">
+      <button class="abtn" id="btnSwitch">Ganti</button>
+      <button class="abtn" id="btnTackle">Tekel</button>
+      <button class="abtn" id="btnLob">Lambung</button>
+      <button class="abtn" id="btnSprint">Lari</button>
+      <button class="abtn" id="btnPass">Operan</button>
+      <button class="abtn" id="btnShoot">Tembak</button>
+    </div>
+    <div id="kbdHint">WASD gerak · J operan · I lambung · K tembak (tahan) · O tekel · Shift lari · L ganti · P jeda</div>
+
+    <div class="overlay" id="pauseOv">
+      <div class="card">
+        <h3>Jeda</h3>
+        <div class="meta" id="pauseMeta"></div>
+        <div class="stack">
+          <button class="cbtn main" id="pResume">Lanjutkan</button>
+          <button class="cbtn" id="pRestart">Mulai ulang</button>
+          <button class="cbtn" id="pSound">Suara: nyala</button>
+          <button class="cbtn" id="pLobby">Kembali ke lobi</button>
+        </div>
+      </div>
+    </div>
+    <div class="overlay" id="endOv">
+      <div class="card">
+        <h3 id="endTitle">Menang</h3>
+        <div class="big" id="endScore">0 - 0</div>
+        <div class="meta" id="endMeta"></div>
+        <div class="stack">
+          <button class="cbtn main" id="eAgain">Main lagi</button>
+          <button class="cbtn" id="eLobby">Kembali ke lobi</button>
+        </div>
+      </div>
+    </div>
+  </section>
+<div id="toast"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
