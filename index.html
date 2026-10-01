@@ -51,15 +51,38 @@
     </div>
     <nav class="menu" aria-label="Menu utama">
       <button class="mbtn" data-go="teams"><b>Pertandingan</b><small>5 lawan 5 melawan komputer</small></button>
+      <button class="mbtn" data-go="division"><b>Divisi</b><small>Naik rank dari Divisi 10 sampai Divisi 1</small></button>
       <button class="mbtn" data-go="training"><b>Latihan</b><small>Bebas, lawan kiper, atau lolos dari bek</small></button>
       <button class="mbtn" data-go="events"><b>Event</b><small>Liga dan Piala Dunia</small></button>
       <button class="mbtn" data-go="online"><b>Main bareng teman</b><small>Lawan temanmu, online atau di satu perangkat</small></button>
       <button class="mbtn" data-go="shop"><b>Toko pemain</b><small>Beli karakter bintang dari berbagai negara</small></button>
       <button class="mbtn" data-go="howto"><b>Cara bermain</b><small>Kontrol dan aturan singkat</small></button>
     </nav>
+    <button class="hbtn pill" id="profBtn" data-go="profile" aria-label="Profil akun" style="position:absolute;top:12px;left:12px;z-index:3;gap:8px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Profil</button>
     <div class="coinchip" id="coinLobby"><i></i><span data-coins>0</span></div>
     <button class="hbtn" id="fsBtn" aria-label="Layar penuh" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <div class="hintp">Putar ponsel ke landscape agar lapangan terlihat lebih luas.</div>
+  </section>
+
+  <!-- DIVISI -->
+  <section id="division" class="screen sub">
+    <div class="panel">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <h2 class="disp">Divisi</h2>
+      <div id="divBody"></div>
+      <button class="go" id="divPlay">Main Divisi</button>
+    </div>
+  </section>
+
+  <!-- PROFIL AKUN -->
+  <section id="profile" class="screen sub">
+    <div class="panel wide">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <div class="pfhead"><div id="pfAv"></div><div style="flex:1;min-width:0"><input id="pfName" class="rn" maxlength="16" aria-label="Nama pemain"><small class="hint" id="pfDiv"></small></div><button class="buy" id="pfSave">Simpan</button></div>
+      <div class="kvs" id="pfStats"></div>
+      <h3>Hasil pertandingan</h3>
+      <div id="pfHist"></div>
+    </div>
   </section>
 
   <!-- PILIH TIM -->
@@ -191,7 +214,7 @@
       <div class="drills">
         <button class="mbtn" data-drill="free"><b>Latihan bebas</b><small>Lapangan kosong. Coba dribel, operan, dan tembakan.</small></button>
         <button class="mbtn" data-drill="keeper"><b>Lawan kiper</b><small>Latih tembakan ke gawang yang dijaga kiper.</small></button>
-        <button class="mbtn" data-drill="defend"><b>Lawan bertahan</b><small>Lolos dari 3 bek lalu kalahkan kiper.</small></button>
+        <button class="mbtn" data-drill="defend"><b>Lawan bertahan</b><small>Lolos dari 3 anchor lalu kalahkan kiper.</small></button>
       </div>
       <div class="row"><label>Grafik</label>
         <div class="seg" data-key="gfx"><button data-v="0">Rendah</button><button data-v="1">Sedang</button><button data-v="2">Tinggi</button></div></div>

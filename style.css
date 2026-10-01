@@ -305,3 +305,18 @@ html,body{height:100vh;height:100dvh}
 #welcome .wa{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#a5f5ff,var(--violet));display:grid;place-items:center;font-size:20px}
 #welcome b{display:block;font-size:14px;line-height:1.2}#welcome small{color:var(--muted);font-size:12px}
 @media (prefers-reduced-motion:reduce){#boot{animation:none;opacity:0}}
+
+/* Divisi & profil */
+.dbar{width:100%;height:10px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden}
+.dbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--pink));transition:width .4s}
+.ladder{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+.rung{padding:6px 10px;border-radius:10px;font:800 15px 'Saira Condensed',sans-serif;background:rgba(255,255,255,.07);color:var(--muted)}
+.rung.done{color:#c8ff3a;background:rgba(200,255,58,.12)}
+.rung.me{color:#0b0630;background:linear-gradient(95deg,var(--cyan),var(--pink))}
+.pfhead{display:flex;align-items:center;gap:12px;margin:6px 0 12px}
+.kvs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kv{padding:10px 6px;border-radius:14px;background:rgba(255,255,255,.06);text-align:center}
+.kv b{display:block;font:800 24px 'Saira Condensed',sans-serif}
+.kv small{color:var(--muted);font-size:12px}
+#profile h3{margin:16px 0 6px;font-size:16px}
+#profBtn{height:44px}

@@ -93,11 +93,11 @@ const TEAMS = [
 ];
 const TEAM = Object.fromEntries(TEAMS.map(t => [t.code, t]));
 const FORMS = {
-  '2-2': { name: 'Seimbang', desc: 'Dua bek dan dua penyerang. Aman saat bertahan, tetap berbahaya di depan.', slots: [[.27, .30, 'DF'], [.27, .70, 'DF'], [.44, .33, 'FW'], [.44, .67, 'FW']] },
-  '1-2-1': { name: 'Berlian', desc: 'Satu bek, dua gelandang, satu penyerang. Kuat menguasai tengah lapangan.', slots: [[.22, .5, 'DF'], [.35, .24, 'MF'], [.35, .76, 'MF'], [.46, .5, 'FW']] },
-  '3-1': { name: 'Bertahan', desc: 'Tiga bek dan satu penyerang. Sulit ditembus, andalkan serangan balik.', slots: [[.24, .2, 'DF'], [.24, .5, 'DF'], [.24, .8, 'DF'], [.46, .5, 'FW']] },
-  '1-3': { name: 'Menyerang', desc: 'Satu bek dan tiga penyerang. Menekan habis, tetapi rawan diserang balik.', slots: [[.22, .5, 'DF'], [.42, .2, 'FW'], [.46, .5, 'FW'], [.42, .8, 'FW']] },
-  '2-1-1': { name: 'Fleksibel', desc: 'Dua bek, satu gelandang penghubung, dan satu penyerang.', slots: [[.26, .3, 'DF'], [.26, .7, 'DF'], [.36, .5, 'MF'], [.47, .5, 'FW']] }
+  '2-2': { name: 'Seimbang', desc: 'Dua anchor dan dua pivot. Aman saat bertahan, tetap berbahaya di depan.', slots: [[.27, .30, 'DF'], [.27, .70, 'DF'], [.44, .33, 'FW'], [.44, .67, 'FW']] },
+  '1-2-1': { name: 'Berlian', desc: 'Satu anchor, dua flank, satu pivot. Kuat menguasai tengah lapangan.', slots: [[.22, .5, 'DF'], [.35, .24, 'MF'], [.35, .76, 'MF'], [.46, .5, 'FW']] },
+  '3-1': { name: 'Bertahan', desc: 'Tiga anchor dan satu pivot. Sulit ditembus, andalkan serangan balik.', slots: [[.24, .2, 'DF'], [.24, .5, 'DF'], [.24, .8, 'DF'], [.46, .5, 'FW']] },
+  '1-3': { name: 'Menyerang', desc: 'Satu anchor dan tiga pivot. Menekan habis, tetapi rawan diserang balik.', slots: [[.22, .5, 'DF'], [.42, .2, 'FW'], [.46, .5, 'FW'], [.42, .8, 'FW']] },
+  '2-1-1': { name: 'Fleksibel', desc: 'Dua anchor, satu flank penghubung, dan satu pivot.', slots: [[.26, .3, 'DF'], [.26, .7, 'DF'], [.36, .5, 'MF'], [.47, .5, 'FW']] }
 };
 const SKS = ['#f6d5b8', '#f1c9a5', '#d9a074', '#a86b45', '#7a4a2e', '#5c3a24'];
 const HRS = ['#1a1a1a', '#3b2314', '#e8c15a', '#ff6f3c', '#c04a2a', '#8a8a99'];
@@ -154,7 +154,7 @@ const NP = {
 };
 const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const hashStr = str => { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-// 30 pemain per negara: 10 penyerang, 10 gelandang, 10 bek (dibuat deterministik agar ID stabil)
+// 30 pemain per negara: 10 pivot, 10 flank, 10 anchor (dibuat deterministik agar ID stabil)
 const STARS = [];
 for (const t of TEAMS) {
   const rnd = mulberry(hashStr(t.code)), pool = NP[t.code], F = pool.f.split(' '), L = pool.l.split(' ');
@@ -174,10 +174,16 @@ for (const t of TEAMS) {
     list.push({ code: t.code, name, pos, spd: v[0], sht: v[1], tkl: v[2], skin, hair });
   }
   list.sort((x, y) => (y.spd + y.sht + y.tkl) - (x.spd + x.sht + x.tkl) || (x.name < y.name ? -1 : 1));
+  list.forEach(pl => { const r2 = mulberry(hashStr(t.code + pl.name + '#umpan')); pl.pas = clamp(Math.round(b + (pl.pos === 'MF' ? .9 : pl.pos === 'DF' ? .1 : -.2) + (r2() - .5) * 2.4), 1, 5); });
   list.forEach((pl, i) => { pl.id = t.code + i; pl.price = Math.max(150, (pl.spd + pl.sht + pl.tkl - 5) * 110); STARS.push(pl); });
 }
+// 10 pemain tambahan dari berbagai negara (ID tersendiri agar pemain lama tidak bergeser)
+[['IDN', 'Arkana Wicaksono', 'FW', 5, 5, 2, 3, 2, 0], ['BRA', 'Vinícius Moraes', 'MF', 5, 4, 2, 5, 3, 0], ['JPN', 'Kenta Morishita', 'MF', 4, 3, 3, 5, 1, 0],
+ ['KOR', 'Seung-hyun Baek', 'DF', 4, 2, 5, 3, 1, 0], ['MAR', 'Ayoub El Fassi', 'FW', 5, 5, 2, 3, 2, 0], ['SEN', 'Cheikh Ndoye', 'DF', 4, 2, 5, 3, 5, 0],
+ ['NGA', 'Tobechi Anyanwu', 'MF', 5, 4, 3, 4, 5, 0], ['USA', 'Cole Ramsey', 'FW', 4, 5, 2, 4, 1, 3], ['CRO', 'Dario Vukelić', 'MF', 4, 4, 3, 5, 0, 1], ['TUR', 'Emir Kaplan', 'DF', 3, 3, 5, 4, 1, 0]
+].forEach((h, i) => { STARS.push({ id: h[0] + 'x' + i, code: h[0], name: h[1], pos: h[2], spd: h[3], sht: h[4], tkl: h[5], pas: h[6], skin: SKS[h[7]], hair: HRS[h[8]], price: Math.max(300, (h[3] + h[4] + h[5] + h[6] - 5) * 130) }); });
 const STAR = Object.fromEntries(STARS.map(x => [x.id, x]));
-const posName = p => p === 'FW' ? 'Penyerang' : p === 'MF' ? 'Gelandang' : 'Bek';
+const posName = p => p === 'FW' ? 'Pivot' : p === 'MF' ? 'Flank' : 'Anchor';
 
 /* ---------------- Warna ---------------- */
 const hex2 = c => { const n = parseInt(c.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
@@ -198,7 +204,7 @@ function pickKits(myCode, oppCode) {
 
 /* ---------------- Data pemain (tersimpan) ---------------- */
 const KEY = 'neonStriker.v1';
-const P = { coins: 800, owned: [], squad: [], team: 'IDN', opp: 'BRA', form: '2-2', names: {}, lg: null, wc: null };
+const P = { coins: 800, owned: [], squad: [], team: 'IDN', opp: 'BRA', form: '2-2', names: {}, lg: null, wc: null, prof: { name: 'Pemain' }, rec: { w: 0, d: 0, l: 0, gf: 0, ga: 0 }, hist: [], div: { lvl: 10, pts: 0, best: 10 } };
 try {
   const r = JSON.parse(localStorage.getItem(KEY) || 'null');
   if (r && typeof r === 'object') Object.assign(P, r);
@@ -211,6 +217,12 @@ P.owned = (P.owned || []).map(legacyId).filter(Boolean); P.squad = (P.squad || [
 if (P.names && typeof P.names === 'object') { const nn = {}; for (const id in P.names) { const k = legacyId(id); if (k) nn[k] = P.names[id]; } P.names = nn; }
 P.owned = P.owned.filter(id => STAR[id]); P.squad = (P.squad || []).filter(id => P.owned.includes(id)).slice(0, 2);
 P.coins = Math.max(0, Math.floor(+P.coins || 0));
+if (!P.prof || typeof P.prof !== 'object') P.prof = { name: 'Pemain' };
+P.prof.name = String(P.prof.name || 'Pemain').slice(0, 16);
+if (!P.rec || typeof P.rec !== 'object') P.rec = { w: 0, d: 0, l: 0, gf: 0, ga: 0 };
+if (!Array.isArray(P.hist)) P.hist = [];
+if (!P.div || typeof P.div !== 'object') P.div = { lvl: 10, pts: 0, best: 10 };
+P.div.lvl = clamp(Math.floor(+P.div.lvl || 10), 1, 10); P.div.pts = Math.max(0, Math.floor(+P.div.pts || 0)); P.div.best = clamp(Math.floor(+P.div.best || P.div.lvl), 1, 10);
 P.names = (P.names && typeof P.names === 'object') ? P.names : {};
 for (const id in P.names) if (STAR[id]) STAR[id].name = String(P.names[id]).slice(0, 18);
 function saveP() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} }
@@ -290,7 +302,7 @@ let shopTab = 'OWN', shopPos = 'ALL';
 function renderShop() {
   const tabs = [['OWN', 'Dimiliki']].concat(TEAMS.map(t => [t.code, t.name]));
   $('#shopTabs').innerHTML = tabs.map(t => '<button class="chip' + (t[0] === shopTab ? ' sel' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>').join('');
-  $('#shopPos').innerHTML = [['ALL', 'Semua'], ['FW', 'Penyerang'], ['MF', 'Gelandang'], ['DF', 'Bek']].map(t => '<button class="chip' + (t[0] === shopPos ? ' sel' : '') + '" data-p="' + t[0] + '">' + t[1] + '</button>').join('');
+  $('#shopPos').innerHTML = [['ALL', 'Semua'], ['FW', 'Pivot'], ['MF', 'Flank'], ['DF', 'Anchor']].map(t => '<button class="chip' + (t[0] === shopPos ? ' sel' : '') + '" data-p="' + t[0] + '">' + t[1] + '</button>').join('');
   const base = STARS.filter(x => shopTab === 'OWN' ? P.owned.includes(x.id) : x.code === shopTab);
   const list = base.filter(x => shopPos === 'ALL' || x.pos === shopPos);
   const ownedN = base.filter(x => P.owned.includes(x.id)).length;
@@ -298,7 +310,7 @@ function renderShop() {
   $('#shopGrid').innerHTML = list.length ? list.map(st => {
     const own = P.owned.includes(st.id), t = TEAM[st.code];
     return '<div class="scard' + (own ? ' owned' : '') + '"><div class="av">' + avatar(st) + '</div><div class="sinfo"><b>' + st.name + '</b><div class="m2">' + crest(t) + '<span>' + t.name + ' · ' + posName(st.pos) + '</span></div>'
-      + statRow('Kecepatan', st.spd) + statRow('Tembakan', st.sht) + statRow('Tekel', st.tkl)
+      + statRow('Kecepatan', st.spd) + statRow('Tembakan', st.sht) + statRow('Tekel', st.tkl) + statRow('Umpan', st.pas || 3)
       + (own ? '<span class="buy own">Dimiliki ✓</span> <button class="buy" data-ren="' + st.id + '">Ubah nama</button>' : '<button class="buy' + (P.coins < st.price ? ' dim' : '') + '" data-id="' + st.id + '"><i></i>Beli · ' + st.price + '</button>') + '</div></div>';
   }).join('') : '<p class="hint">' + (shopTab === 'OWN' ? 'Kamu belum memiliki pemain di kategori ini. Pilih negara di atas untuk mulai berbelanja.' : 'Tidak ada pemain di kategori ini.') + '</p>';
 }
@@ -514,7 +526,32 @@ $('#evReset').addEventListener('click', () => {
   setTimeout(() => { if (resetArm) { resetArm = 0; $('#evReset').textContent = 'Batalkan event'; } }, 2500);
 });
 
-const onShow = { lobby: () => { renderCoins(); if (!G) netLeave(); }, online: onlineShow, teams: () => { lineupFrom = 'match'; renderTeams(); }, lineup: renderLineup, shop: () => { renderCoins(); if (shopTab === 'OWN' && !P.owned.length) shopTab = P.team; renderShop(); }, events: renderEvents, evdetail: renderEvDetail };
+
+/* ---------------- Divisi & Profil ---------------- */
+const divOpp = lvl => { const pw = clamp(Math.round(1 + (10 - lvl) * 4 / 9), 1, 5); let c = TEAMS.filter(t => t.pow === pw && t.code !== P.team); if (!c.length) c = TEAMS.filter(t => t.code !== P.team); return c[Math.floor(Math.random() * c.length)].code; };
+let divNext = null;
+function renderDivision() {
+  const d = P.div; if (!divNext || divNext === P.team) divNext = divOpp(d.lvl);
+  const t = TEAM[divNext];
+  $('#divBody').innerHTML = '<div class="nextm"><small>Posisi kamu</small><b>DIVISI ' + d.lvl + '</b><div class="dbar"><i style="width:' + Math.min(100, d.pts / 9 * 100) + '%"></i></div><small>' + d.pts + ' / 9 poin untuk naik · menang +3, seri +1, kalah -1</small></div>'
+    + '<div class="nextm"><small>Lawan berikutnya · ' + ['Mudah', 'Sedang', 'Sulit'][divDiff(d.lvl)] + '</small><div class="vs2">' + crest(TEAM[P.team]) + '<b>VS</b>' + crest(t) + '</div><b>' + t.name + '</b></div>'
+    + '<div class="ladder">' + Array.from({ length: 10 }, (_, i) => i + 1).map(n => '<span class="rung' + (n === d.lvl ? ' me' : n > d.lvl ? ' done' : '') + '">D' + n + '</span>').join('') + '</div>';
+}
+function histRow(h) {
+  const r = h.a > h.b ? 'M' : h.a < h.b ? 'K' : 'S', col = r === 'M' ? '#c8ff3a' : r === 'K' ? '#ff7a7a' : '#a3a8e0';
+  return '<div class="mrow"><span style="flex:none;min-width:22px;font-weight:700;color:' + col + '">' + r + '</span><span>' + h.me + ' vs ' + h.op + '</span><b>' + h.a + ' - ' + h.b + '</b><span>' + h.k + '</span></div>';
+}
+function renderProfile() {
+  const r = P.rec, n = r.w + r.d + r.l;
+  $('#pfAv').innerHTML = crest(TEAM[P.team], 64);
+  $('#pfName').value = P.prof.name;
+  $('#pfDiv').textContent = 'Divisi ' + P.div.lvl;
+  $('#pfStats').innerHTML = [['Main', n], ['Menang', r.w], ['Seri', r.d], ['Kalah', r.l], ['Gol', r.gf], ['Kebobolan', r.ga], ['Win rate', n ? Math.round(r.w / n * 100) + '%' : '-'], ['Divisi terbaik', 'D' + P.div.best], ['Pemain', P.owned.length]].map(x => '<div class="kv"><b>' + x[1] + '</b><small>' + x[0] + '</small></div>').join('');
+  $('#pfHist').innerHTML = P.hist.length ? P.hist.slice(0, 20).map(histRow).join('') : '<p class="hint">Belum ada pertandingan. Mainkan satu laga dan hasilnya muncul di sini.</p>';
+}
+$('#pfSave').addEventListener('click', () => { const v = $('#pfName').value.trim().slice(0, 16); if (v) { P.prof.name = v; saveP(); toast('Nama disimpan'); } });
+$('#divPlay').addEventListener('click', () => { const o = divNext; divNext = null; startGame('match', null, { division: P.div.lvl, opp: o }); });
+const onShow = { division: renderDivision, profile: renderProfile, lobby: () => { renderCoins(); if (!G) netLeave(); }, online: onlineShow, teams: () => { lineupFrom = 'match'; renderTeams(); }, lineup: renderLineup, shop: () => { renderCoins(); if (shopTab === 'OWN' && !P.owned.length) shopTab = P.team; renderShop(); }, events: renderEvents, evdetail: renderEvDetail };
 renderCoins();
 
 /* ---------------- Navigasi layar ---------------- */
@@ -710,13 +747,13 @@ function mk(t, role, hx, hy, idx) {
   return {
     team: t, role, hx, hy, idx, x: 0, y: 0, vx: 0, vy: 0, face: t === 0 ? 0 : Math.PI,
     phase: Math.random() * 6, kick: 0, cd: 0, stun: 0, lunge: 0, lcd: 0, tk: 0, hold: 0, think: 0,
-    sta: 1, tired: false, spd: 0, gkErr: 0, gkErrT: -9, sm: 1, shs: 3, tks: 3, star: null, charging: false, charge: 0,
+    sta: 1, tired: false, spd: 0, gkErr: 0, gkErrT: -9, sm: 1, shs: 3, tks: 3, pas: 3, star: null, charging: false, charge: 0,
     skin: SKINS[(idx * 2 + t) % SKINS.length], hair: HAIR[(idx * 3 + t + 1) % HAIR.length]
   };
 }
 function applyStar(p, st) {
   p.star = st; p.skin = st.skin; p.hair = st.hair;
-  p.sm = 1 + (st.spd - 3) * .035; p.shs = st.sht; p.tks = st.tkl;
+  p.sm = 1 + (st.spd - 3) * .035; p.shs = st.sht; p.tks = st.tkl; p.pas = st.pas || 3;
 }
 function makeTeam(t, out, gk, slots, stars) {
   const arr = [];
@@ -737,8 +774,12 @@ function hudNames() {
   if (g.mode === 'match') { b.style.display = ''; st(b, g.kit[1 - me], g.codes[1 - me]); } else b.style.display = 'none';
 }
 
+let baseDiff = null;
+const divDiff = l => l >= 7 ? 0 : l >= 4 ? 1 : 2;
+function restoreDiff() { if (baseDiff !== null) { S.diff = baseDiff; baseDiff = null; } }
 function startGame(mode, drillKey, opts) {
   opts = opts || {};
+  if (opts.division) { if (baseDiff === null) baseDiff = S.diff; S.diff = divDiff(opts.division); } else restoreDiff();
   const cfg = mode === 'match' ? MATCH : DRILLS[drillKey];
   const D = DIFF[S.diff];
   const V = opts.versus || null;
@@ -759,7 +800,7 @@ function startGame(mode, drillKey, opts) {
     slots1 = FORMS['3-1'].slots; as1 = [];
   }
   G = {
-    kit: [kitA, kitB], codes: [TA.code, TB.code], trainEarned: 0, event: opts.event || null, opts,
+    kit: [kitA, kitB], codes: [TA.code, TB.code], trainEarned: 0, event: opts.event || null, division: opts.division || 0, opts,
     versus: V, net: V ? (V.mode === 'host' ? 'host' : V.mode === 'local' ? null : 'guest') : null, spec: !!V && V.mode === 'spec', local2p: !!V && V.mode === 'local',
     me: V && V.mode === 'guest' ? 1 : 0, flip: !!V && V.mode === 'guest', remote: newRemote(), endT: 0,
     mode: mode === 'match' ? 'match' : 'train', drillKey, cfg,
@@ -873,13 +914,15 @@ function pickPass(p, dx, dy, minAl, fx) {
   return best;
 }
 function doPass(p, dx, dy, minAl, fx, lob) {
+  const pe = p.pas || 3, sp = 1 + (pe - 3) * .05, er = (5 - pe) * .014;   // skill umpan: tenaga dan ketepatan arah
+  const rt = (x, y) => { const a = rand(-er, er), c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
   const q = pickPass(p, dx, dy, minAl, fx);
   if (q) {
-    const tx = q.x + q.vx * .35, ty = q.y + q.vy * .35, vx = tx - p.x, vy = ty - p.y, d = Math.hypot(vx, vy);
-    if (lob) { const vz = clamp(d * .5, 200, 340), tt = 2 * vz / 900; kick(p, vx, vy, clamp(d / tt, 240, 1000), vz); }
-    else kick(p, vx, vy, clamp(d * 1.5 + 100, 260, 880), 0);
-  } else if (lob) kick(p, dx, dy, 520, 270);
-  else kick(p, dx, dy, 430, 0);
+    const tx = q.x + q.vx * .35, ty = q.y + q.vy * .35, d = Math.hypot(tx - p.x, ty - p.y), [vx, vy] = rt(tx - p.x, ty - p.y);
+    if (lob) { const vz = clamp(d * .5, 200, 340), tt = 2 * vz / 900; kick(p, vx, vy, clamp(d / tt, 240, 1000) * sp, vz); }
+    else kick(p, vx, vy, clamp(d * 1.5 + 100, 260, 880) * sp, 0);
+  } else if (lob) { const [ux, uy] = rt(dx, dy); kick(p, ux, uy, 520 * sp, 270); }
+  else { const [ux, uy] = rt(dx, dy); kick(p, ux, uy, 430 * sp, 0); }
   SFX.pass();
 }
 function doShoot(p, power, isUser) {
@@ -1815,13 +1858,25 @@ function showEnd() {
     if (prize) extra = ' · hadiah event +' + prize;
     $('#eAgain').textContent = 'Lihat event';
   } else $('#eAgain').textContent = 'Main lagi';
+  if (g.mode === 'match' && !g.spec && !(g.versus && g.versus.mode === 'local')) {
+    const kind = g.versus ? 'Main bareng' : g.division ? 'Divisi ' + g.division : g.event === 'lg' ? 'Liga' : g.event === 'wc' ? 'Piala Dunia' : 'Pertandingan';
+    P.hist.unshift({ t: Date.now(), k: kind, me: g.codes[me], op: g.codes[1 - me], a, b }); P.hist = P.hist.slice(0, 30);
+    P.rec.w += a > b ? 1 : 0; P.rec.d += a === b ? 1 : 0; P.rec.l += a < b ? 1 : 0; P.rec.gf += a; P.rec.ga += b;
+  }
+  if (g.division) {
+    const dv = P.div, was = dv.lvl; dv.pts = Math.max(0, dv.pts + (a > b ? 3 : a === b ? 1 : -1));
+    if (dv.pts >= 9 && dv.lvl > 1) { dv.lvl--; dv.pts = 0; dv.best = Math.min(dv.best, dv.lvl); reward += 300; extra = ' · NAIK ke Divisi ' + dv.lvl + '! +300 koin'; }
+    else if (dv.pts >= 9) { dv.pts = 9; extra = ' · kamu bertahan di Divisi 1'; }
+    else extra = ' · ' + (a > b ? '+3' : a === b ? '+1' : '-1') + ' poin divisi';
+    $('#eAgain').textContent = 'Lihat divisi'; restoreDiff();
+  }
   P.coins += reward; saveP(); renderCoins();
   $('#endTitle').textContent = title;
   $('#endScore').textContent = a + ' - ' + b;
   $('#endMeta').textContent = g.codes[me] + ' vs ' + g.codes[1 - me] + (g.versus ? '' : ' · ' + ['Mudah', 'Sedang', 'Sulit'][S.diff]) + (reward ? ' · +' + reward + ' koin' : '') + extra;
   $('#endOv').classList.add('on');
 }
-function toLobby() { if (G && G.net) netLeave(); G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('lobby'); }
+function toLobby() { restoreDiff(); if (G && G.net) netLeave(); G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('lobby'); }
 function restart() { const m = G.mode, d = G.drillKey, o = G.opts; startGame(m === 'match' ? 'match' : 'train', d, o); }
 $('#btnPause').addEventListener('click', pause);
 $('#btnReset').addEventListener('click', resetBall);
@@ -1829,7 +1884,7 @@ $('#pResume').addEventListener('click', resume);
 $('#pRestart').addEventListener('click', restart);
 $('#pLobby').addEventListener('click', toLobby);
 $('#pSound').addEventListener('click', () => { S.sound = !S.sound; syncSeg(); $('#pSound').textContent = 'Suara: ' + (S.sound ? 'nyala' : 'mati'); });
-$('#eAgain').addEventListener('click', () => { if (G && G.versus && G.versus.mode !== 'local') { G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('online'); } else if (G && G.event) { evKind = G.event; G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('evdetail'); } else restart(); });
+$('#eAgain').addEventListener('click', () => { if (G && G.versus && G.versus.mode !== 'local') { G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('online'); } else if (G && G.division) { G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('division'); } else if (G && G.event) { evKind = G.event; G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('evdetail'); } else restart(); });
 $('#eLobby').addEventListener('click', toLobby);
 $('#goMatch').addEventListener('click', () => startGame('match'));
 $$('[data-drill]').forEach(b => b.addEventListener('click', () => startGame('train', b.dataset.drill)));
