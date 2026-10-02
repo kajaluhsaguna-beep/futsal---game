@@ -958,6 +958,12 @@ function userControl(p, h, inp) {
   const tfa = mag > .2 ? Math.atan2(my, mx) : undefined;
   move(p, mx, my, sp, h, tfa);
   const dirx = mag > .2 ? mx : Math.cos(p.face), diry = mag > .2 ? my : Math.sin(p.face);
+  if (p.role === 'GK') {
+    const gx = p.team === 0 ? 0 : W, inw = p.team === 0 ? 1 : -1;
+    p.x = clamp(p.x, Math.min(gx, gx + inw * 300), Math.max(gx, gx + inw * 300)); p.y = clamp(p.y, CY - GH * .9, CY + GH * .9);
+    if (b.owner === p) { p.gkT = (p.gkT === undefined ? 5 : p.gkT) - h; if (p.gkT <= 0) { gkRelease(p); return; } }
+  }
+  p.aimT = b.owner === p ? pickPass(p, dirx, diry, .35, 0) : null;   // penerima umpan yang akan dituju
 
   if (inp.passEdge) {
     inp.passEdge = false;
@@ -990,6 +996,20 @@ function formPos(p, attack) {
   if (attack && p.role === 'FW') ty += Math.sin(G.t * .9 + p.idx * 2) * 70;
   return [t === 0 ? ltx : W - ltx, clamp(ty, 50, H - 50)];
 }
+function defendPos(p, owner, dirX) {
+  // anchor: menekan pembawa bola di dekat gawang sendiri, atau menjaga lawan dari sisi gawang
+  const t = p.team, ownGX = t === 0 ? 0 : W;
+  if (Math.abs(owner.x - ownGX) > W * .62) return null;
+  const mates = G.teams[t].filter(q => q.role === 'DF' && q !== G.chaser[t]);
+  if (Math.abs(owner.x - ownGX) < W * .5 && mates.length) {
+    let near = mates[0]; for (const q of mates) if (dist(q, owner) < dist(near, owner)) near = q;
+    if (near === p && dist(p, owner) < 320) return [owner.x + owner.vx * .2 - dirX * 8, owner.y + owner.vy * .2, 1.15];
+  }
+  let best = null, bd = 1e9;
+  for (const o of G.teams[1 - t]) { if (o.role === 'GK' || o === owner) continue; const d = dist(o, p) + Math.abs(o.x - ownGX) * .25; if (d < bd) { bd = d; best = o; } }
+  if (!best) return null;
+  return [best.x - dirX * 50, lerp(best.y, CY, .12), 1.05];
+}
 function ai(p, h) {
   const g = G, b = g.ball, t = p.team, mul = t === 1 ? g.aiMul : 1;
   if (p.role === 'GK') { gkAI(p, h); return; }
@@ -1003,8 +1023,9 @@ function ai(p, h) {
     tx = ref.x + ref.vx * .25 - (opp ? dirX * 10 : 0); ty = ref.y + ref.vy * .25;
     speed = SPR * mul * (Math.hypot(tx - p.x, ty - p.y) > 90 ? 1 : .85); arrive = 14;
   } else {
-    [tx, ty] = formPos(p, has);
-    if (has) speed = RUN * mul * 1.05;
+    const dm = (opp && p.role === 'DF') ? defendPos(p, owner, dirX) : null;
+    if (dm) { tx = dm[0]; ty = dm[1]; speed = RUN * mul * dm[2]; arrive = 18; }
+    else { [tx, ty] = formPos(p, has); if (has) speed = RUN * mul * 1.05; }
   }
   seek(p, tx, ty, speed, arrive, h);
 }
@@ -1035,9 +1056,7 @@ function gkAI(p, h) {
   if (b.owner === p) {
     p.hold -= h; move(p, 0, 0, 200, h, tfa);
     if (p.hold <= 0) {
-      const q = pickPass(p, inw, 0, -.4, inw);
-      if (q) doPass(p, q.x - p.x, q.y - p.y, -1, 0); else kick(p, inw, rand(-.5, .5), 620, 40);
-      SFX.kick();
+      gkRelease(p);
     }
     return;
   }
@@ -1050,9 +1069,9 @@ function gkAI(p, h) {
       const py = b.y + b.vy * tt + p.gkErr;
       if (Math.abs(py - CY) < GH * .85) { ty = py; speed = 420 + 300 * skill; arrive = 8; }
     }
-  } else if (!b.owner && dist(b, p) < 210 && Math.abs(b.x - gx) < 300) {
+  } else if (!b.owner && dist(b, p) < 270 && Math.abs(b.x - gx) < 340) {
     const rival = nearest(g.teams[1 - t], b);
-    if (!rival || dist(rival, b) > dist(p, b) * .9) { tx = b.x; ty = b.y; speed = 300 * skill + 60; arrive = 10; }
+    if (!rival || dist(rival, b) > dist(p, b) * .7) { tx = b.x; ty = b.y; speed = 300 * skill + 60; arrive = 10; }
   }
   tx = clamp(tx, Math.min(gx, gx + inw * 300), Math.max(gx, gx + inw * 300));
   ty = clamp(ty, CY - GH / 2 - 30, CY + GH / 2 + 30);
@@ -1165,7 +1184,20 @@ function ballPhysics(h) {
 }
 function take(p) {
   const b = G.ball; b.owner = p; b.last = p; p.tk = 0;
-  if (p.role === 'GK') p.hold = rand(.8, 1.3);
+  if (p.role === 'GK') {
+    p.hold = rand(.8, 1.3);
+    const g = G;
+    if (p.team === 0 || g.versus) {   // kiper tim kita: kontrol pindah ke kiper selama memegang bola
+      const key = p.team ? 'ctrl1' : 'ctrl', old = g[key];
+      if (old && old !== p) { old.charging = false; old.charge = 0; }
+      g[key] = p; g.sw[p.team] = 0; g.lk[p.team] = 0; p.gkT = 5; p.charging = false; p.charge = 0;
+    }
+  }
+}
+function gkRelease(p) {
+  const inw = p.team === 0 ? 1 : -1, q = pickPass(p, inw, 0, -.4, inw);
+  if (q) doPass(p, q.x - p.x, q.y - p.y, -1, 0); else kick(p, inw, rand(-.5, .5), 620, 40);
+  SFX.kick();
 }
 function handleBall(h) {
   const g = G, b = g.ball;
@@ -1191,14 +1223,20 @@ function handleBall(h) {
     p.tk = 0;
     if (p.cd > 0 || p.stun > .2) continue;
     const gk = p.role === 'GK';
-    const reach = PR + BR + (gk ? 20 : 7) + (p.lunge > 0 ? 10 : 0), d = dist(p, b);
-    if (d < reach && b.z < (gk ? 42 : 22) && d < bd) { bd = d; best = p; }
+    const reach = PR + BR + (gk ? 36 : 7) + (p.lunge > 0 ? 10 : 0), d = dist(p, b);
+    if (d < reach && b.z < (gk ? 58 : 22) && d < bd) { bd = d; best = p; }
   }
   if (!best) return;
-  if (best.role === 'GK' && bs > 720) {
-    const inw = best.team === 0 ? 1 : -1;
-    b.vx = inw * Math.abs(b.vx) * .4; b.vy += rand(-220, 220); b.vz = 120; best.cd = .35; best.kick = 1; b.last = best;
-    SFX.save(); if (S.gfx) spark(b.x, b.y, 8, '#c8ff3a');
+  if (best.role === 'GK') {
+    // kiper langsung menangkap bola; hanya tembakan sangat kencang yang kadang cuma ditepis
+    const sk = best.team === 1 ? g.gkSkill : .75;
+    if (g.t - (best.gkRT || -9) > .5) { best.gkRT = g.t; best.gkOK = bs < 700 || Math.random() < clamp(1.6 - bs / 900 + (sk - .6) * .5, .2, 1); }
+    if (best.gkOK) { take(best); SFX.save(); if (S.gfx) spark(b.x, b.y, 6, '#c8ff3a'); }
+    else {
+      const inw = best.team === 0 ? 1 : -1;
+      b.vx = inw * Math.abs(b.vx) * .4; b.vy += rand(-220, 220); b.vz = 120; best.cd = .35; best.kick = 1; b.last = best;
+      SFX.save(); if (S.gfx) spark(b.x, b.y, 8, '#c8ff3a');
+    }
   } else if (bs < 760 || best.lunge > 0) take(best);
   else { b.vx *= .45; b.vy *= .45; best.cd = .25; }
 }
@@ -1363,6 +1401,23 @@ function drawBall() {
   ctx.restore();
 }
 function render(dt) { if (!G) return; if (use3D && R3) render3D(dt); else render2D(); }
+/* Pengarah umpan: garis putus-putus, cincin di penerima, dan panah menuju teman satu tim */
+function aimTargets(g) { const out = []; for (const c of [g.ctrl, g.ctrl1]) if (c && c.aimT && g.ball.owner === c && c.aimT.team === c.team) out.push([c, c.aimT]); return out; }
+function aim2D(g) {
+  for (const [c, t] of aimTargets(g)) {
+    const dx = t.x - c.x, dy = t.y - c.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, col = c.team === 0 ? '#22e6ff' : '#ff3fd2', pu = 1 + Math.sin(g.t * 8) * .12;
+    const x0 = c.x + ux * 26, y0 = c.y + uy * 26, x1 = t.x - ux * 30, y1 = t.y - uy * 30;
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = col; ctx.fillStyle = col;
+    if (d > 70) {
+      ctx.globalAlpha = .75; ctx.lineWidth = 3.5; ctx.setLineDash([12, 9]); ctx.lineDashOffset = -g.t * 60;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha = 1; ctx.beginPath(); ctx.moveTo(x1 + ux * 12, y1 + uy * 12); ctx.lineTo(x1 - ux * 4 - uy * 9, y1 - uy * 4 + ux * 9); ctx.lineTo(x1 - ux * 4 + uy * 9, y1 - uy * 4 - ux * 9); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = .95; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(t.x, t.y, 27 * pu, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = .22; ctx.beginPath(); ctx.arc(t.x, t.y, 27 * pu, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+}
 function render2D() {
   const g = G; if (!g) return;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#070420'; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -1381,6 +1436,7 @@ function render2D() {
   const ents = g.teams[0].concat(g.teams[1]).map(p => ({ y: p.y, p })); ents.push({ y: g.ball.y - 1, ball: true });
   ents.sort((a, b) => a.y - b.y);
   for (const e of ents) e.ball ? drawBall() : drawPlayer(e.p, e.p === g.ctrl || e.p === g.ctrl1);
+  aim2D(g);
   ctx.font = '600 12px Saira, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.fillStyle = '#ffd23c';
   for (const t of [0, 1]) for (const p of g.teams[t]) if (p.star && !g.flip) { ctx.strokeText(p.star.name, p.x, p.y - 30); ctx.fillText(p.star.name, p.x, p.y - 30); }
   for (const p of g.parts) {
@@ -1582,6 +1638,21 @@ function overlay3D(cp) {
     else { ctx.beginPath(); ctx.arc(s[0], s[1], sz * .8, 0, TAU); ctx.fill(); }
   }
   ctx.globalAlpha = 1;
+  for (const [c, t] of aimTargets(g)) {
+    const a = proj(c.x, 3, c.y), b2 = proj(t.x, 3, t.y), col = c.team === 0 ? '#22e6ff' : '#ff3fd2', pu = 1 + Math.sin(g.t * 8) * .12;
+    const dx = b2[0] - a[0], dy = b2[1] - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, rr = Math.max(14, 27 * pxu * pu);
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = col; ctx.fillStyle = col;
+    if (d > rr * 2.4) {
+      const x1 = b2[0] - ux * rr * 1.25, y1 = b2[1] - uy * rr * 1.25 * .6;
+      ctx.globalAlpha = .75; ctx.lineWidth = 3.5; ctx.setLineDash([12, 9]); ctx.lineDashOffset = -g.t * 60;
+      ctx.beginPath(); ctx.moveTo(a[0] + ux * 16, a[1] + uy * 16); ctx.lineTo(x1, y1); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha = 1; ctx.beginPath(); ctx.moveTo(x1 + ux * 12, y1 + uy * 12); ctx.lineTo(x1 - ux * 4 - uy * 9, y1 - uy * 4 + ux * 9); ctx.lineTo(x1 - ux * 4 + uy * 9, y1 - uy * 4 - ux * 9); ctx.closePath(); ctx.fill();
+    }
+    const g0 = proj(t.x, 0, t.y);
+    ctx.globalAlpha = .95; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(g0[0], g0[1], rr, rr * .6, 0, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = .22; ctx.fill();
+    ctx.restore();
+  }
   ctx.font = '600 12px Saira, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.fillStyle = '#ffd23c';
   for (const t of [0, 1]) for (const q of g.teams[t]) if (q.star) { const n = proj(q.x, 72, q.y); ctx.strokeText(q.star.name, n[0], n[1]); ctx.fillText(q.star.name, n[0], n[1]); }
   const c = g.me === 1 ? g.ctrl1 : g.ctrl;
