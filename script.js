@@ -777,6 +777,25 @@ function hudNames() {
 let baseDiff = null;
 const divDiff = l => l >= 7 ? 0 : l >= 4 ? 1 : 2;
 function restoreDiff() { if (baseDiff !== null) { S.diff = baseDiff; baseDiff = null; } }
+/* ---------------- Animasi masuk pertandingan ---------------- */
+let introT = [];
+function playIntro(g) {
+  const el = $('#intro'); if (!el) { banner('KICKOFF', g.codes[0] + ' vs ' + g.codes[1], 1500); SFX.whistle(); return; }
+  introT.forEach(clearTimeout); introT = [];
+  const A = TEAM[g.codes[0]], B = TEAM[g.codes[1]];
+  const kind = g.versus ? 'Main bareng' : g.division ? 'Divisi ' + g.division : g.event === 'lg' ? 'Liga' : g.event === 'wc' ? 'Piala Dunia' : 'Pertandingan';
+  const fmt = g.timer >= 60 ? Math.round(g.timer / 60) + ' menit' : '';
+  el.innerHTML = '<div class="in-wipe"></div><div class="in-bar b1"></div><div class="in-bar b2"></div>'
+    + '<div class="in-kind">' + kind + '</div>'
+    + '<div class="in-row"><div class="in-team l">' + crest(A, 84) + '<b>' + A.name + '</b><small>Kamu</small></div><div class="in-vs">VS</div><div class="in-team r">' + crest(B, 84) + '<b>' + B.name + '</b><small>' + (g.versus ? 'Teman' : 'Lawan') + '</small></div></div>'
+    + '<div class="in-meta">' + fmt + '</div><div class="in-count" id="inCount"></div><div class="in-skip">Sentuh untuk lewati</div>';
+  el.classList.remove('go'); void el.offsetWidth; el.classList.add('on', 'go');
+  g.state = 'kickoff'; g.stateT = 4.6;
+  const c = $('#inCount'), tick = (txt, big) => { c.textContent = txt; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); if (big) SFX.whistle(); else SFX.pass(); };
+  introT.push(setTimeout(() => tick('3'), 2300), setTimeout(() => tick('2'), 2900), setTimeout(() => tick('1'), 3500), setTimeout(() => tick('KICK OFF!', true), 4100), setTimeout(endIntro, 4650));
+  el.onclick = () => { if (g.state === 'kickoff' && g.stateT > .7) g.stateT = .7; endIntro(); };
+}
+function endIntro() { introT.forEach(clearTimeout); introT = []; const el = $('#intro'); if (el) { el.classList.remove('on', 'go'); el.onclick = null; } }
 function startGame(mode, drillKey, opts) {
   opts = opts || {};
   if (opts.division) { if (baseDiff === null) baseDiff = S.diff; S.diff = divDiff(opts.division); } else restoreDiff();
@@ -827,7 +846,8 @@ function startGame(mode, drillKey, opts) {
   if (use3D) build3D();
   placeKickoff(0);
   G.cam.x = W / 2; G.cam.y = CY;
-  if (G.mode === 'match') { banner('KICKOFF', G.codes[0] + ' vs ' + G.codes[1] + ' · ' + (G.event ? evLabel(G.event) : G.local2p ? 'P1 menyerang ke kanan, P2 ke kiri' : G.spec ? 'mode penonton' : 'kamu menyerang ke kanan'), 1800); SFX.whistle(); }
+  if (G.mode === 'match' && !G.spec) playIntro(G);
+  else if (G.mode === 'match') { banner('KICKOFF', G.codes[0] + ' vs ' + G.codes[1] + ' · ' + (G.event ? evLabel(G.event) : G.local2p ? 'P1 menyerang ke kanan, P2 ke kiri' : G.spec ? 'mode penonton' : 'kamu menyerang ke kanan'), 1800); SFX.whistle(); }
   else banner(cfg.title.toUpperCase(), 'Cetak gol sebanyak mungkin', 1500);
   last = performance.now();
 }
@@ -835,6 +855,7 @@ function startGame(mode, drillKey, opts) {
 function placeKickoff(kickTeam) {
   const g = G, b = g.ball;
   for (const t of [0, 1]) for (const p of g.teams[t]) {
+    if (p.out) { p.x = p.y = -5000; continue; }
     const lx = p.role === 'GK' ? .035 : Math.min(p.hx, .43);
     p.x = t === 0 ? lx * W : W - lx * W; p.y = p.hy * H;
     p.vx = p.vy = 0; p.face = t === 0 ? 0 : Math.PI;
@@ -898,7 +919,7 @@ function pickPass(p, dx, dy, minAl, fx) {
   const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
   let best = null, bs = -9; const opp = G.teams[1 - p.team];
   for (const q of G.teams[p.team]) {
-    if (q === p) continue;
+    if (q === p || q.out) continue;
     const vx = q.x - p.x, vy = q.y - p.y, d = Math.hypot(vx, vy);
     if (d < 70 || d > 900) continue;
     const al = (vx * dx + vy * dy) / d; if (al < minAl) continue;
@@ -917,6 +938,10 @@ function doPass(p, dx, dy, minAl, fx, lob) {
   const pe = p.pas || 3, sp = 1 + (pe - 3) * .05, er = (5 - pe) * .014;   // skill umpan: tenaga dan ketepatan arah
   const rt = (x, y) => { const a = rand(-er, er), c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
   const q = pickPass(p, dx, dy, minAl, fx);
+  if (q && q.role !== 'GK') {
+    G.passTo = q; G.passT = G.t;   // penerima ditandai agar bisa menjemput dan mengontrol bola
+    for (const key of ['ctrl', 'ctrl1']) if (G[key] === p) { p.charging = false; p.charge = 0; G[key] = q; const ti = key === 'ctrl' ? 0 : 1; G.lk[ti] = .7; G.sw[ti] = .5; }
+  } else if (q) { G.passTo = q; G.passT = G.t; }
   if (q) {
     const tx = q.x + q.vx * .35, ty = q.y + q.vy * .35, d = Math.hypot(tx - p.x, ty - p.y), [vx, vy] = rt(tx - p.x, ty - p.y);
     if (lob) { const vz = clamp(d * .5, 200, 340), tt = 2 * vz / 900; kick(p, vx, vy, clamp(d / tt, 240, 1000) * sp, vz); }
@@ -939,16 +964,115 @@ function doShoot(p, power, isUser) {
   kick(p, Math.cos(ang), Math.sin(ang), (520 + 650 * power) * (1 + (p.shs - 3) * .05), 35 + 150 * power + (power > .85 ? rand(0, 110) : 0));
   SFX.kick();
 }
+
+/* ---------------- Pelanggaran & kartu ---------------- */
+function slideContact(q) {
+  const g = G, b = g.ball;
+  for (const o of g.teams[1 - q.team]) {
+    if (o.out || o.role === 'GK' || dist(q, o) > PR * 2 + 4) continue;
+    q.lchk = true;
+    const clean = dist(q, b) < PR + BR + (b.owner === o ? 20 : 26);
+    if (!clean) {
+      const behind = (Math.cos(q.face) * Math.cos(o.face) + Math.sin(q.face) * Math.sin(o.face)) > .35;
+      callFoul(q, o, behind);
+    }
+    return;
+  }
+}
+function callFoul(q, o, behind) {
+  const g = G, b = g.ball; if (g.state !== 'play') return;
+  const r = Math.random(); let card = behind ? (r < .12 ? 'red' : r < .55 ? 'yellow' : null) : (r < .2 ? 'yellow' : null);
+  if (card === 'yellow') { q.yc = (q.yc || 0) + 1; if (q.yc >= 2) card = 'red2'; }
+  const redsOut = g.teams[q.team].filter(x => x.out).length;
+  if ((card === 'red' || card === 'red2') && (redsOut >= 1 || q.role === 'GK')) card = 'yellow';
+  const pen = o.role !== 'GK' && Math.abs(o.x - (q.team === 0 ? 0 : W)) <= 210 && Math.abs(o.y - CY) <= 250;   // di dalam kotak penalti
+  g.state = 'foul'; g.stateT = card ? 2.6 : 1.8; g.shake = 4;
+  b.owner = o; b.last = o; b.vx = b.vy = 0; b.z = b.vz = 0; o.stun = 0; o.cd = 0; q.lunge = 0;
+  if (!pen) for (const x of g.teams[q.team]) { if (x.out) continue; const dx = x.x - b.x, dy = x.y - b.y, d = Math.hypot(dx, dy) || 1; if (d < 140) { x.x = clamp(b.x + dx / d * 140, PR, W - PR); x.y = clamp(b.y + dy / d * 140, PR, H - PR); } }
+  for (const x of g.all) { x.charging = false; x.charge = 0; }
+  const nm = q.star ? q.star.name : (g.codes[q.team] + ' #' + (g.teams[q.team].indexOf(q) + 1));
+  SFX.whistle();
+  if (card === 'yellow') showCard('y', 'KARTU KUNING', nm + ' · ' + g.codes[q.team]);
+  else if (card) { showCard('r', 'KARTU MERAH', nm + (card === 'red2' ? ' · kuning kedua' : '') + ' · ' + g.codes[q.team]); sendOff(q); }
+  else if (!pen) banner('PELANGGARAN', g.codes[q.team] + ' melanggar · tendangan bebas', 1700);
+  if (pen) startPenalty(o, q, card);
+}
+function sendOff(q) {
+  const g = G; q.out = true; q.x = q.y = -5000; q.vx = q.vy = 0;
+  for (const key of ['ctrl', 'ctrl1']) if (g[key] === q) { const c = g.teams[q.team].filter(x => x.role !== 'GK' && !x.out); g[key] = c.length ? nearest(c, g.ball) : null; }
+}
+/* ---------------- Penalti ---------------- */
+function startPenalty(kicker, fouler, card) {
+  const g = G, b = g.ball, gk = g.teams[fouler.team].find(x => x.role === 'GK');
+  if (!gk) { g.state = 'foul'; return; }
+  const gx = fouler.team === 0 ? 0 : W, dir = fouler.team === 0 ? 1 : -1, spotX = gx + dir * 150;
+  g.state = 'pen'; g.stateT = card ? 3 : 2.2; g.penK = kicker; g.penG = gk; g.penAim = 0; g.penT = 0; g.penDelay = rand(1.1, 1.7);
+  b.owner = null; b.last = kicker; b.x = spotX; b.y = CY; b.vx = b.vy = 0; b.z = b.vz = 0; g.trail.length = 0;
+  kicker.x = spotX + dir * (PR + BR + 30); kicker.y = CY; kicker.face = dir > 0 ? Math.PI : 0; kicker.vx = kicker.vy = 0;
+  gk.x = gx + dir * (PR + 4); gk.y = CY; gk.face = dir > 0 ? 0 : Math.PI; gk.vx = gk.vy = 0; gk.dive = null;
+  let i = 0;
+  for (const x of g.all) {
+    if (x === kicker || x === gk || x.out) continue;
+    if (Math.abs(x.x - gx) < 250 && Math.abs(x.y - CY) < 280) { x.x = gx + dir * (270 + (i % 3) * 45); x.y = CY + ((i % 5) - 2) * 85; i++; }
+    x.vx = x.vy = 0;
+  }
+  for (const x of g.all) { x.charging = false; x.charge = 0; }
+  if ((kicker.team === 0 || g.versus) && !g.spec) g[kicker.team ? 'ctrl1' : 'ctrl'] = kicker;
+  else if ((gk.team === 0 || g.versus) && !g.spec) g[gk.team ? 'ctrl1' : 'ctrl'] = gk;
+  banner('PENALTI', g.codes[kicker.team] + ' mendapat tendangan penalti', 2000);
+}
+function penReticle(g) {
+  if (g.state !== 'penaim' || !g.penK || !g.penG) return null;
+  if (!((g.penK.team === 0 || g.versus) && !g.spec)) return null;
+  return { x: g.penG.team === 0 ? 0 : W, y: CY + g.penAim * (GH / 2 - 18) };
+}
+function penFire(ty) {
+  const g = G, b = g.ball, k = g.penK, gk = g.penG; if (!k || !gk) { g.state = 'play'; return; }
+  const humanK = (k.team === 0 || g.versus) && !g.spec, humanGK = (gk.team === 0 || g.versus) && !g.spec;
+  const gx = gk.team === 0 ? 0 : W, lim = GH / 2 - 6;
+  ty = clamp(ty + rand(-1, 1) * GH * (humanK ? .05 : .08), CY - lim - (humanK ? 0 : (Math.random() < .08 ? 40 : 0)), CY + lim + (humanK ? 0 : 0));
+  const dx = gx - b.x, dy = ty - b.y, l = Math.hypot(dx, dy) || 1, sp = 880;
+  b.owner = null; b.last = k; b.vx = dx / l * sp; b.vy = dy / l * sp; b.vz = 0; k.kick = 1; k.cd = .7; SFX.kick();
+  if (!humanGK) { const sk = gk.team === 1 ? g.gkSkill : .75, side = Math.sign(ty - CY) || 1; gk.dive = { vy: (Math.random() < .42 + sk * .35 ? side : -side) * 540, t: .42 }; }
+  g.state = 'play'; g.penK = g.penG = null; g.penAim = 0;
+}
+function penStep(dt) {
+  const g = G, k = g.penK, gk = g.penG; if (!k || !gk) { g.state = 'play'; return; }
+  g.penT += dt;
+  const humanK = (k.team === 0 || g.versus) && !g.spec, humanGK = (gk.team === 0 || g.versus) && !g.spec;
+  if (humanGK) {
+    const gi = gk.team === 0 ? g.in0 : g.in1, vy = clamp((gi.jy || 0) + (gi.ky || 0), -1, 1);
+    gk.y = clamp(gk.y + vy * 300 * dt, CY - GH / 2 + 8, CY + GH / 2 - 8);
+  }
+  if (humanK) {
+    const ki = k.team === 0 ? g.in0 : g.in1, ay = clamp((ki.jy || 0) + (ki.ky || 0), -1, 1);
+    g.penAim += (ay - g.penAim) * Math.min(1, dt * 7);
+    if (g.penT > .4 && ki.shootEdge) { ki.shootEdge = false; penFire(CY + g.penAim * (GH / 2 - 18)); }
+    else if (g.penT > 9) penFire(CY + rand(-.6, .6) * GH / 2);
+  } else if (g.penT > g.penDelay) penFire(CY + (Math.random() < .5 ? -1 : 1) * GH * rand(.12, .42));
+  g.all.forEach(x => { if (x !== gk) { x.vx = x.vy = 0; } });
+}
+let cardT = 0;
+function showCard(kind, title, sub) {
+  const el = $('#cardPop'); if (!el) return;
+  el.innerHTML = '<i class="pcard ' + kind + '"></i><div><b>' + title + '</b><small>' + sub + '</small></div>';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(cardT); cardT = setTimeout(() => el.classList.remove('show'), 2800);
+}
 function lunge(p) {
   if (p.lcd > 0 || p.stun > 0) return;
-  p.lunge = .3; p.lcd = .95;
-  p.vx = Math.cos(p.face) * 350; p.vy = Math.sin(p.face) * 350;
+  p.lunge = .42; p.lcd = 1.1; p.lchk = false;
+  p.vx = Math.cos(p.face) * 410; p.vy = Math.sin(p.face) * 410;
   SFX.tackle();
 }
 
 function userControl(p, h, inp) {
   const g = G, b = g.ball;
   let mx = inp.jx + inp.kx, my = inp.jy + inp.ky;
+  if (g.passTo === p && !b.owner && g.t - g.passT < 1.4) {   // bantuan menjemput umpan
+    const ix = b.x + b.vx * .25 - p.x, iy = b.y + b.vy * .25 - p.y, il = Math.hypot(ix, iy) || 1, w = clamp(il / 140, 0, 1) * .7;
+    mx = mx * (1 - w) + ix / il * w; my = my * (1 - w) + iy / il * w;
+  }
   const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; }
   const mag = Math.min(1, l);
   const canSprint = inp.sprint && mag > .35 && p.sta > 0 && !p.tired;
@@ -956,7 +1080,7 @@ function userControl(p, h, inp) {
   else { p.sta = Math.min(1, p.sta + .16 * h); if (p.tired && p.sta > .3) p.tired = false; }
   const sp = (canSprint ? SPR : RUN) * (b.owner === p ? .94 : 1) * (p.charging ? .85 : 1);
   const tfa = mag > .2 ? Math.atan2(my, mx) : undefined;
-  move(p, mx, my, sp, h, tfa);
+  move(p, mx, my, sp, h, tfa, b.owner === p ? 12 : undefined);
   const dirx = mag > .2 ? mx : Math.cos(p.face), diry = mag > .2 ? my : Math.sin(p.face);
   if (p.role === 'GK') {
     const gx = p.team === 0 ? 0 : W, inw = p.team === 0 ? 1 : -1;
@@ -1017,6 +1141,7 @@ function ai(p, h) {
   const goalX = t === 0 ? W : 0, dirX = t === 0 ? 1 : -1, owner = b.owner;
   const has = owner && owner.team === t, opp = owner && owner.team !== t;
   if (owner === p) { carrier(p, h, goalX, dirX, mul); return; }
+  if (g.passTo === p && !owner && g.t - g.passT < 2.2) { seek(p, b.x + b.vx * .3, b.y + b.vy * .3, SPR * mul, 10, h); return; }
   let tx, ty, speed = RUN * mul, arrive = 40;
   if (g.chaser[t] === p && !has) {
     const ref = opp ? owner : b;
@@ -1084,7 +1209,7 @@ function teamMeta() {
   for (const t of [0, 1]) {
     const ref = (b.owner && b.owner.team !== t) ? b.owner : b;
     let best = null, bd = 1e9;
-    for (const p of g.teams[t]) { if (p.role === 'GK') continue; const d = dist(p, ref) + p.stun * 200; if (d < bd) { bd = d; best = p; } }
+    for (const p of g.teams[t]) { if (p.role === 'GK' || p.out) continue; const d = dist(p, ref) + p.stun * 200; if (d < bd) { bd = d; best = p; } }
     g.chaser[t] = best;
   }
 }
@@ -1096,11 +1221,11 @@ function autoSwitch(h) {
     g.sw[t] -= h; g.lk[t] -= h;
     if (inp.switchEdge) {
       inp.switchEdge = false;
-      const cands = g.teams[t].filter(p => p.role !== 'GK' && p !== g[key]);
+      const cands = g.teams[t].filter(p => p.role !== 'GK' && !p.out && p !== g[key]);
       if (cands.length) { const old = g[key]; if (old) { old.charging = false; old.charge = 0; } g[key] = nearest(cands, b); g.lk[t] = .9; g.sw[t] = .4; }
     }
     if (g.sw[t] > 0 || g.lk[t] > 0) continue;
-    const outs = g.teams[t].filter(p => p.role !== 'GK'); if (!outs.length) continue;
+    const outs = g.teams[t].filter(p => p.role !== 'GK' && !p.out); if (!outs.length) continue;
     let target = null;
     if (b.owner && b.owner.team === t) { if (b.owner.role !== 'GK') target = b.owner; }
     else {
@@ -1117,7 +1242,11 @@ function step(h) {
   if (playing) autoSwitch(h);
   for (const t of [0, 1]) for (const p of g.teams[t]) {
     p.cd = Math.max(0, p.cd - h); p.stun = Math.max(0, p.stun - h); p.kick = Math.max(0, p.kick - h * 4);
-    p.lunge = Math.max(0, p.lunge - h); p.lcd = Math.max(0, p.lcd - h);
+    if (p.out) { p.x = p.y = -5000; p.vx = p.vy = 0; continue; }
+    const wasL = p.lunge > 0; p.lunge = Math.max(0, p.lunge - h); p.lcd = Math.max(0, p.lcd - h);
+    if (wasL && p.lunge === 0) p.stun = Math.max(p.stun, .3);   // bangun setelah meluncur
+    if (p.lunge > 0 && !p.lchk && playing && p.role !== 'GK') slideContact(p);
+    if (p.dive && playing) { p.dive.t -= h; if (p.dive.t > 0) { p.vx = 0; p.vy = p.dive.vy; p.y = clamp(p.y + p.vy * h, CY - GH / 2 - 24, CY + GH / 2 + 24); p.spd = Math.abs(p.vy); continue; } p.dive = null; }
     if (playing) { if (p === g.ctrl) userControl(p, h, g.in0); else if (p === g.ctrl1) userControl(p, h, g.in1); else ai(p, h); }
     else move(p, 0, 0, RUN, h);
   }
@@ -1138,11 +1267,11 @@ function separate() {
 function ballPhysics(h) {
   const g = G, b = g.ball;
   if (b.owner) {
-    const o = b.owner, tx = o.x + Math.cos(o.face) * (PR + BR + 1), ty = o.y + Math.sin(o.face) * (PR + BR + 1);
-    b.vx += (260 * (tx - b.x) - 32 * (b.vx - o.vx)) * h;
-    b.vy += (260 * (ty - b.y) - 32 * (b.vy - o.vy)) * h;
+    const o = b.owner, lead = PR + BR + 1 + Math.min(9, (o.spd || 0) * .03), tx = o.x + Math.cos(o.face) * lead, ty = o.y + Math.sin(o.face) * lead;
+    b.vx += (340 * (tx - b.x) - 40 * (b.vx - o.vx)) * h;
+    b.vy += (340 * (ty - b.y) - 40 * (b.vy - o.vy)) * h;
     b.z = 0; b.vz = 0;
-    if (dist(b, o) > PR + BR + 28) b.owner = null;
+    if (dist(b, o) > PR + BR + 46) b.owner = null;
   } else {
     if (b.z <= .5) { const f = Math.exp(-DRAG * h); b.vx *= f; b.vy *= f; }
     else { const f = Math.exp(-.12 * h); b.vx *= f; b.vy *= f; }
@@ -1209,6 +1338,7 @@ function handleBall(h) {
       if (dist(q, b) < reach && q.cd <= 0 && q.stun <= 0) {
         q.tk += h * (q.lunge > 0 ? 4 : 1);
         if (q.tk > ((q === g.ctrl || q === g.ctrl1) ? .26 : g.tkThr) * (1 - (q.tks - 3) * .1)) {
+          if (q.lunge <= 0 && q.role !== 'GK') { const fx = Math.cos(o.face), fy = Math.sin(o.face), vx = q.x - o.x, vy = q.y - o.y, vl = Math.hypot(vx, vy) || 1; if ((fx * vx + fy * vy) / vl < -.55 && Math.random() < .2) { callFoul(q, o, true); return; } }
           b.owner = q; b.last = q; q.tk = 0; o.cd = .7; o.stun = .3; q.think = .15;
           b.vx += Math.cos(q.face) * 40; b.vy += Math.sin(q.face) * 40;
           SFX.tackle(); if (S.gfx) spark(b.x, b.y, 7, '#fff');
@@ -1218,6 +1348,8 @@ function handleBall(h) {
     return;
   }
   const bs = Math.hypot(b.vx, b.vy);
+  const rp = g.passTo;
+  if (rp && g.t - g.passT < 2.2 && !rp.out && rp.cd <= 0 && rp.stun < .2 && b.last && b.last.team === rp.team && dist(rp, b) < PR + BR + 20 && b.z < 36 && bs < 1150) { take(rp); g.passTo = null; return; }
   let best = null, bd = 1e9;
   for (const t of [0, 1]) for (const p of g.teams[t]) {
     p.tk = 0;
@@ -1237,7 +1369,7 @@ function handleBall(h) {
       b.vx = inw * Math.abs(b.vx) * .4; b.vy += rand(-220, 220); b.vz = 120; best.cd = .35; best.kick = 1; b.last = best;
       SFX.save(); if (S.gfx) spark(b.x, b.y, 8, '#c8ff3a');
     }
-  } else if (bs < 760 || best.lunge > 0) take(best);
+  } else if (bs < 900 || best.lunge > 0) take(best);
   else { b.vx *= .45; b.vy *= .45; best.cd = .25; }
 }
 function checkGoal() {
@@ -1309,13 +1441,20 @@ function update(dt) {
       if (g.mode === 'match' && g.timer <= 0) endMatch();
       else placeKickoff(g.mode === 'match' ? g.concede : 0);
     }
+  } else if (g.state === 'pen') {
+    g.stateT -= dt;
+    if (g.stateT <= 0) { g.state = 'penaim'; g.penT = 0; const k = g.penK; if (k && (k.team === 0 || g.versus) && !g.spec) banner('BIDIK', 'Geser joystick ke atas atau bawah, lalu tekan Tembak', 2600); else if (g.penG && (g.penG.team === 0 || g.versus) && !g.spec) banner('JAGA GAWANG', 'Geser joystick ke atas atau bawah', 2400); }
+  } else if (g.state === 'penaim') {
+    penStep(dt);
+  } else if (g.state === 'foul') {
+    g.stateT -= dt; if (g.stateT <= 0) g.state = 'play';
   } else if (g.state === 'ended') {
     g.stateT -= dt;
     if (g.stateT <= 0 && !g.endShown) showEnd();
   } else if (g.state === 'play' && g.mode === 'match') {
     g.timer = Math.max(0, g.timer - dt);
   }
-  if (g.state !== 'kickoff') {
+  if (g.state !== 'kickoff' && g.state !== 'foul' && g.state !== 'pen' && g.state !== 'penaim') {
     const n = Math.ceil(dt / (1 / 100)), h = dt / n;
     for (let i = 0; i < n; i++) step(h);
   } else {
@@ -1404,6 +1543,13 @@ function render(dt) { if (!G) return; if (use3D && R3) render3D(dt); else render
 /* Pengarah umpan: garis putus-putus, cincin di penerima, dan panah menuju teman satu tim */
 function aimTargets(g) { const out = []; for (const c of [g.ctrl, g.ctrl1]) if (c && c.aimT && g.ball.owner === c && c.aimT.team === c.team) out.push([c, c.aimT]); return out; }
 function aim2D(g) {
+  const pr = penReticle(g);
+  if (pr) {
+    const pu = 1 + Math.sin(g.t * 9) * .12;
+    ctx.save(); ctx.strokeStyle = '#22e6ff'; ctx.fillStyle = '#22e6ff'; ctx.lineWidth = 4; ctx.globalAlpha = .95;
+    ctx.beginPath(); ctx.arc(pr.x, pr.y, 22 * pu, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(pr.x, pr.y, 5, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(pr.x - 34, pr.y); ctx.lineTo(pr.x - 12, pr.y); ctx.moveTo(pr.x + 12, pr.y); ctx.lineTo(pr.x + 34, pr.y); ctx.stroke(); ctx.restore();
+  }
   for (const [c, t] of aimTargets(g)) {
     const dx = t.x - c.x, dy = t.y - c.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, col = c.team === 0 ? '#22e6ff' : '#ff3fd2', pu = 1 + Math.sin(g.t * 8) * .12;
     const x0 = c.x + ux * 26, y0 = c.y + uy * 26, x1 = t.x - ux * 30, y1 = t.y - uy * 30;
@@ -1433,7 +1579,7 @@ function render2D() {
       ctx.beginPath(); ctx.moveTo(g.trail[i - 1].x, g.trail[i - 1].y - g.trail[i - 1].z * .7); ctx.lineTo(g.trail[i].x, g.trail[i].y - g.trail[i].z * .7); ctx.stroke();
     }
   }
-  const ents = g.teams[0].concat(g.teams[1]).map(p => ({ y: p.y, p })); ents.push({ y: g.ball.y - 1, ball: true });
+  const ents = g.teams[0].concat(g.teams[1]).filter(p => !p.out).map(p => ({ y: p.y, p })); ents.push({ y: g.ball.y - 1, ball: true });
   ents.sort((a, b) => a.y - b.y);
   for (const e of ents) e.ball ? drawBall() : drawPlayer(e.p, e.p === g.ctrl || e.p === g.ctrl1);
   aim2D(g);
@@ -1638,6 +1784,12 @@ function overlay3D(cp) {
     else { ctx.beginPath(); ctx.arc(s[0], s[1], sz * .8, 0, TAU); ctx.fill(); }
   }
   ctx.globalAlpha = 1;
+  const pr3 = penReticle(g);
+  if (pr3) {
+    const s0 = proj(pr3.x, 40, pr3.y), rr = Math.max(14, 22 * pxu * (1 + Math.sin(g.t * 9) * .12));
+    ctx.save(); ctx.strokeStyle = '#22e6ff'; ctx.fillStyle = '#22e6ff'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(s0[0], s0[1], rr, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(s0[0], s0[1], 5, 0, TAU); ctx.fill(); ctx.restore();
+  }
   for (const [c, t] of aimTargets(g)) {
     const a = proj(c.x, 3, c.y), b2 = proj(t.x, 3, t.y), col = c.team === 0 ? '#22e6ff' : '#ff3fd2', pu = 1 + Math.sin(g.t * 8) * .12;
     const dx = b2[0] - a[0], dy = b2[1] - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, rr = Math.max(14, 27 * pxu * pu);
@@ -1788,7 +1940,7 @@ const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 function buildSnap(g) {
   const all = g.all, b = g.ball, ix = p => p ? all.indexOf(p) : -1;
   return {
-    n: ++NET.n, st: ['kickoff', 'play', 'goal', 'ended'].indexOf(g.state), tm: r1(g.timer), sc: g.score.slice(), pz: g.paused ? 1 : 0,
+    n: ++NET.n, st: Math.max(0, ['kickoff', 'play', 'goal', 'ended'].indexOf(g.state)), tm: r1(g.timer), sc: g.score.slice(), pz: g.paused ? 1 : 0,
     b: [r1(b.x), r1(b.y), r1(b.z), Math.round(b.vx), Math.round(b.vy), Math.round(b.vz), ix(b.owner)],
     p: all.map(p => [r1(p.x), r1(p.y), Math.round(p.vx), Math.round(p.vy), r2(p.face), (p.kick > .3 ? 1 : 0) | (p.lunge > 0 ? 2 : 0) | (p.charging ? 4 : 0) | (p.stun > 0 ? 8 : 0)]),
     c: [ix(g.ctrl), ix(g.ctrl1)],
@@ -1947,7 +2099,7 @@ function showEnd() {
   $('#endMeta').textContent = g.codes[me] + ' vs ' + g.codes[1 - me] + (g.versus ? '' : ' · ' + ['Mudah', 'Sedang', 'Sulit'][S.diff]) + (reward ? ' · +' + reward + ' koin' : '') + extra;
   $('#endOv').classList.add('on');
 }
-function toLobby() { restoreDiff(); if (G && G.net) netLeave(); G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('lobby'); }
+function toLobby() { endIntro(); restoreDiff(); if (G && G.net) netLeave(); G = null; clearInput(); $('#pauseOv').classList.remove('on'); $('#endOv').classList.remove('on'); show('lobby'); }
 function restart() { const m = G.mode, d = G.drillKey, o = G.opts; startGame(m === 'match' ? 'match' : 'train', d, o); }
 $('#btnPause').addEventListener('click', pause);
 $('#btnReset').addEventListener('click', resetBall);
