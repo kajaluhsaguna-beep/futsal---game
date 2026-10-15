@@ -273,9 +273,9 @@ function formSVG() {
     + dot(9, 50, '#c8ff3a', '#3aa000', 0) + g + '<text x="156" y="96" text-anchor="end" font-size="6" fill="rgba(255,255,255,.6)">arah serangan →</text></svg>';
 }
 function renderLineup() {
-  const dest = lineupFrom === 'ev' ? 'evdetail' : lineupFrom === 'online' ? 'online' : null, fe = !!dest;
+  const dest = lineupFrom === 'ev' ? 'evdetail' : lineupFrom === 'online' ? 'online' : lineupFrom === 'team' ? 'lobby' : null, fe = !!dest;
   $('#lnBack').dataset.go = dest || 'teams'; $('#lnNext').dataset.go = dest || 'match';
-  $('#lnNext').textContent = fe ? 'Simpan skuad' : 'Lanjut: Pengaturan'; $('#lnSteps').style.display = fe ? 'none' : '';
+  $('#lnNext').textContent = lineupFrom === 'team' ? 'Simpan tim' : fe ? 'Simpan skuad' : 'Lanjut: Pengaturan'; $('#lnSteps').style.display = fe ? 'none' : '';
   $('#formPrev').innerHTML = formSVG();
   $('#formRow').innerHTML = Object.keys(FORMS).map(k => '<button class="chip' + (k === P.form ? ' sel' : '') + '" data-f="' + k + '">' + k + '</button>').join('');
   $('#formDesc').innerHTML = '<b>' + FORMS[P.form].name + '.</b> ' + FORMS[P.form].desc;
@@ -551,12 +551,32 @@ function renderProfile() {
 }
 $('#pfSave').addEventListener('click', () => { const v = $('#pfName').value.trim().slice(0, 16); if (v) { P.prof.name = v; saveP(); toast('Nama disimpan'); } });
 $('#divPlay').addEventListener('click', () => { const o = divNext; divNext = null; startGame('match', null, { division: P.div.lvl, opp: o }); });
-const onShow = { division: renderDivision, profile: renderProfile, lobby: () => { renderCoins(); if (!G) netLeave(); }, online: onlineShow, teams: () => { lineupFrom = 'match'; renderTeams(); }, lineup: renderLineup, shop: () => { renderCoins(); if (shopTab === 'OWN' && !P.owned.length) shopTab = P.team; renderShop(); }, events: renderEvents, evdetail: renderEvDetail };
+const onShow = { division: renderDivision, profile: renderProfile, lobby: () => { renderCoins(); renderLobby(); if (!G) netLeave(); }, modes: renderModes, match: renderMatchVs, online: onlineShow, teams: () => { lineupFrom = teamFlag ? 'team' : 'match'; renderTeams(); }, lineup: renderLineup, shop: () => { renderCoins(); if (shopTab === 'OWN' && !P.owned.length) shopTab = P.team; renderShop(); }, events: renderEvents, evdetail: renderEvDetail };
 renderCoins();
 
 /* ---------------- Navigasi layar ---------------- */
 function show(id) { $$('.screen').forEach(s => s.classList.toggle('active', s.id === id)); if (onShow[id]) onShow[id](); }
-document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go]'); if (b) show(b.dataset.go); });
+let teamFlag = false;
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-go]'); if (b) { if (b.dataset.flag) teamFlag = b.dataset.flag === 'team'; show(b.dataset.go); } });
+const todayKey = () => new Date().toISOString().slice(0, 10);
+function renderLobby() {
+  $('#lbName').textContent = P.prof.name || 'Profil';
+  $('#promoDiv').textContent = 'Kamu di Divisi ' + P.div.lvl + ' · ' + P.div.pts + '/9 poin';
+  const can = P.daily !== todayKey();
+  ['#dailyBtn', '#dailyBtn2'].forEach(q => { const b = $(q); if (b) b.classList.toggle('dot', can); });
+  const sb = $('#dailySub'); if (sb) sb.textContent = can ? 'Ambil 150 koin gratis' : 'Sudah diambil. Kembali besok';
+}
+function claimDaily() {
+  if (P.daily === todayKey()) { toast('Hadiah hari ini sudah diambil. Kembali besok.'); return; }
+  P.daily = todayKey(); P.coins += 150; saveP(); renderCoins(); renderLobby(); toast('+150 koin hadiah harian');
+}
+['#dailyBtn', '#dailyBtn2'].forEach(q => { const b = $(q); if (b) b.addEventListener('click', claimDaily); });
+$$('.lbTabs [data-tab]').forEach(b => b.addEventListener('click', () => {
+  $$('.lbTabs [data-tab]').forEach(x => x.classList.toggle('sel', x === b));
+  $$('.tabp').forEach(p => { p.hidden = p.id !== 'tab-' + b.dataset.tab; });
+}));
+function renderModes() { $('#mdTeams').textContent = 'Timmu: ' + TEAM[P.team].name + ' · formasi ' + P.form + '. Ubah lewat menu Tim di lobi.'; }
+function renderMatchVs() { $('#mtA').innerHTML = crest(TEAM[P.team]) + '<span>' + TEAM[P.team].name + '</span>'; $('#mtB').innerHTML = crest(TEAM[P.opp]) + '<span>' + TEAM[P.opp].name + '</span>'; }
 
 function syncSeg() {
   $$('.seg[data-key]').forEach(seg => {
@@ -1663,6 +1683,23 @@ function init3D() {
       add(new THREE.BoxGeometry(80, 18, 30), new THREE.MeshBasicMaterial({ color: 0xffffff }), px, 345, -150);
     }
 
+    // tribun penonton (ala arena futsal)
+    const crowdTex = canvasTex(512, 128, (x, w, h) => {
+      x.fillStyle = '#17123a'; x.fillRect(0, 0, w, h);
+      const cs = ['#ff3fd2', '#22e6ff', '#ffd23c', '#f4f6ff', '#7a3cff', '#ff7a3c', '#3cff9a', '#9aa6ff'];
+      for (let r = 0; r < 9; r++) for (let i = 0; i < 64; i++) {
+        const cx = i * 8 + (r % 2) * 4 + 4, cy = 10 + r * 13;
+        x.fillStyle = '#e8b890'; x.beginPath(); x.arc(cx, cy - 4, 2.4, 0, TAU); x.fill();
+        x.fillStyle = cs[(Math.random() * cs.length) | 0]; x.fillRect(cx - 3, cy - 1, 6, 8);
+      }
+    });
+    crowdTex.wrapS = THREE.RepeatWrapping; crowdTex.repeat.set(3, 1);
+    const cm = new THREE.MeshBasicMaterial({ map: crowdTex, color: 0xb8b8d8 });
+    const stand = (len, px, pz, ry) => { const m = add(new THREE.PlaneGeometry(len, 150), cm, px, 92, pz); m.rotation.set(-.62, ry, 0, 'YXZ'); };
+    stand(W + 900, W / 2, -150, 0);
+    stand(W + 900, W / 2, H + 150, Math.PI);
+    stand(H + 300, -170, CY, Math.PI / 2); stand(H + 300, W + 170, CY, -Math.PI / 2);
+
     // bola
     const ballTex = canvasTex(128, 64, (x, w, h) => {
       x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.fillStyle = '#1b1240';
@@ -1730,7 +1767,7 @@ function build3D() {
 function camParams() {
   const a = cssW / cssH, tanH = Math.tan(21 * Math.PI / 180);
   const needH = Math.max((cssW < cssH ? 600 : 820) / a, 440);
-  const dist = needH / (2 * tanH), el = 52 * Math.PI / 180;
+  const dist = needH * 1.06 / (2 * tanH), el = 41 * Math.PI / 180;
   return { dist, tanH, h: dist * Math.sin(el), back: dist * Math.cos(el), visW: needH * a, visH: needH };
 }
 function proj(x, y, z) { const v = R3.v; v.set(x, y, z).project(R3.camera); return [(v.x * .5 + .5) * cssW, (-v.y * .5 + .5) * cssH]; }
@@ -1749,7 +1786,11 @@ function render3D(dt) {
     m.legR.rotation.z = p.kick > 0 ? .3 + p.kick * 1.2 : -sw;
     m.armL.rotation.z = -sw * .85; m.armR.rotation.z = sw * .85;
     let lean = -.2 * k, by = Math.abs(Math.sin(p.phase)) * 1.6 * k + Math.sin(g.t * 2 + p.idx) * .25;
-    if (p.lunge > 0) { lean = -1.05; by = 0; }
+    let rl = 0;
+    if (p.lunge > 0) { lean = -1.35; by = -6; m.legL.rotation.z = .9; m.legR.rotation.z = -1.2; }
+    if (p.dive) { rl = p.dive.vy > 0 ? 1.25 : -1.25; by = 4; m.armL.rotation.z = m.armR.rotation.z = Math.PI * .85; }
+    if (g.state === 'goal' && p.team === 1 - g.concede && !p.out) { m.armL.rotation.z = m.armR.rotation.z = Math.PI * .9 + Math.sin(g.t * 14 + p.idx) * .25; by = Math.abs(Math.sin(g.t * 7 + p.idx)) * 7; }
+    m.body.rotation.x += (rl - m.body.rotation.x) * Math.min(1, dt * 16);
     m.body.rotation.z += (lean - m.body.rotation.z) * Math.min(1, dt * 14);
     m.body.position.y = by;
     m.shadow.position.set(p.x + 3, .4, p.y + 3);
@@ -2015,9 +2056,14 @@ function renderRoomStatus() {
   if (!NET.nr) return;
   const host = NET.role === 'host', peers = NET.nr.peers();
   const other = peers.find(p => !p.isMe && p.presence.role === (host ? 'guest' : 'host'));
-  const ot = other && TEAM[other.presence.tm] ? TEAM[other.presence.tm] : null;
-  $('#rmStatus').innerHTML = '<div class="pl">' + crest(TEAM[P.team], 32) + '<span>Kamu (' + (host ? 'tuan rumah' : 'tamu') + ') · ' + TEAM[P.team].name + (!host ? (NET.ready ? ' · siap ✓' : '') : '') + '</span></div>'
-    + (other ? '<div class="pl">' + crest(ot || TEAM.IDN, 32) + '<span>Teman (' + (host ? 'tamu' : 'tuan rumah') + ')' + (ot ? ' · ' + ot.name : '') + (host ? (other.presence.rd ? ' · siap ✓' : ' · belum siap') : '') + '</span></div>' : '<div class="pl dim">Menunggu teman bergabung…</div>');
+  const ot = other && TEAM[other.presence.tm] ? TEAM[other.presence.tm] : TEAM.IDN;
+  const myRd = host ? true : !!NET.ready, otRd = other ? (host ? !!other.presence.rd : true) : false;
+  const slot = (me, t, who, rd, rdTxt) => '<div class="slot' + (me ? ' me' : '') + '">' + crest(t, 44) + '<div class="nm">' + t.name + '</div><small>' + who + '</small><span class="rd' + (rd ? ' ok' : '') + '">' + rdTxt + '</span></div>';
+  $('#rmStatus').innerHTML = '<div class="slots">'
+    + slot(true, TEAM[P.team], 'Kamu · ' + (host ? 'tuan rumah' : 'tamu'), myRd, host ? 'Tuan rumah' : (myRd ? 'Siap ✓' : 'Belum siap'))
+    + '<span class="vsm">VS</span>'
+    + (other ? slot(false, ot, 'Teman · ' + (host ? 'tamu' : 'tuan rumah'), otRd, host ? (otRd ? 'Siap ✓' : 'Belum siap') : 'Tuan rumah') : '<div class="slot dim"><div class="nm">Menunggu teman…</div><small>Bagikan kode di atas</small></div>')
+    + '</div>';
   const act = $('#rmAction');
   if (host) { act.textContent = 'Mulai pertandingan'; act.disabled = !(other && other.presence.rd); act.style.opacity = act.disabled ? .45 : 1; }
   else { act.textContent = NET.ready ? 'Batal siap' : 'Saya siap'; act.disabled = !other; act.style.opacity = act.disabled ? .45 : 1; }
@@ -2035,6 +2081,8 @@ function onlineShow() {
   $('#olLocalInfo').textContent = 'Berdua di satu perangkat: pemain 2 memakai tim ' + lo.name + ' (ubah lewat menu Pertandingan, bagian Lawan).';
   if (NET.nr) { netHello(); renderRoom(); } else { $('#olMenu').hidden = false; $('#olRoom').hidden = true; olNote(''); }
 }
+$('#rmCopy').addEventListener('click', () => { const c = NET.code || ''; if (navigator.clipboard) navigator.clipboard.writeText(c).then(() => toast('Kode disalin: ' + c), () => toast('Kode: ' + c)); else toast('Kode: ' + c); });
+$('#rmShare').addEventListener('click', () => { const t = 'Ayo main Futsal Game bareng! Kode ruangan: ' + NET.code; if (navigator.share) navigator.share({ title: 'Futsal Game', text: t, url: location.href }).catch(() => {}); else { if (navigator.clipboard) navigator.clipboard.writeText(t); toast('Ajakan disalin'); } });
 $('#olHost').addEventListener('click', async () => { if (await netJoin('host', genCode())) renderRoom(); });
 $('#olJoin').addEventListener('click', async () => {
   const c = $('#olCode').value.toUpperCase().replace(/[^A-Z0-9]/g, '');

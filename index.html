@@ -44,24 +44,62 @@
       <i style="--x:52%;--y:6%;--s:70px;--c:#22e6ff;--d:-5s"></i>
       <i style="--x:24%;--y:40%;--s:56px;--c:#ff3fd2;--d:-9s"></i>
     </div>
-    <div class="brand">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22e6ff"/><stop offset="1" stop-color="#ff3fd2"/></linearGradient></defs><circle cx="32" cy="32" r="26" fill="none" stroke="url(#lg)" stroke-width="7"/><rect x="14" y="28" width="36" height="8" rx="4" fill="url(#lg)"/></svg>
-      <h1><span class="l1">FUTSAL</span><span class="l2">GAME</span></h1>
-      <p>Futsal neon 5 lawan 5. Kuasai bola, lewati lawan, tembak ke gawang.</p>
+    <div class="lbTop">
+      <button class="hbtn pill" id="profBtn" data-go="profile" aria-label="Profil akun"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span id="lbName">Profil</span></button>
+      <div class="lbTabs" role="tablist">
+        <button data-tab="home" class="sel">Beranda</button><button data-tab="shop">Toko</button><button data-tab="acad">Akademi</button><button data-tab="extra">Ekstra</button>
+      </div>
+      <div class="lbR"><div class="coinchip" id="coinLobby"><i></i><span data-coins>0</span></div><button class="hbtn" id="fsBtn" aria-label="Layar penuh" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
     </div>
-    <nav class="menu" aria-label="Menu utama">
-      <button class="mbtn" data-go="teams"><b>Pertandingan</b><small>5 lawan 5 melawan komputer</small></button>
-      <button class="mbtn" data-go="division"><b>Divisi</b><small>Naik rank dari Divisi 10 sampai Divisi 1</small></button>
-      <button class="mbtn" data-go="training"><b>Latihan</b><small>Bebas, lawan kiper, atau lolos dari bek</small></button>
-      <button class="mbtn" data-go="events"><b>Event</b><small>Liga dan Piala Dunia</small></button>
-      <button class="mbtn" data-go="online"><b>Main bareng teman</b><small>Lawan temanmu, online atau di satu perangkat</small></button>
-      <button class="mbtn" data-go="shop"><b>Toko pemain</b><small>Beli karakter bintang dari berbagai negara</small></button>
-      <button class="mbtn" data-go="howto"><b>Cara bermain</b><small>Kontrol dan aturan singkat</small></button>
-    </nav>
-    <button class="hbtn pill" id="profBtn" data-go="profile" aria-label="Profil akun" style="position:absolute;top:12px;left:12px;z-index:3;gap:8px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Profil</button>
-    <div class="coinchip" id="coinLobby"><i></i><span data-coins>0</span></div>
-    <button class="hbtn" id="fsBtn" aria-label="Layar penuh" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <div class="lbBody">
+      <div class="tabp" id="tab-home">
+        <button class="promo" data-go="division"><div><small>FUTSAL GAME</small><h1><span class="l1">NAIK</span> <span class="l2">DIVISI</span></h1><p id="promoDiv">Divisi 10</p></div><span class="cta">Main sekarang ›</span></button>
+        <div class="tiles">
+          <button class="tile t-match" data-go="modes" ><span class="ti" aria-hidden="true">⚽</span><b>Permainan</b><small>Pertandingan, divisi, event, mabar</small></button>
+          <button class="tile t-team" data-go="teams" data-flag="team" ><span class="ti" aria-hidden="true">👕</span><b>Tim</b><small>Negara, formasi, skuad</small></button>
+          <button class="tile t-contract" data-go="shop" ><span class="ti" aria-hidden="true">✍</span><b>Kontrak</b><small>Rekrut pemain bintang</small></button>
+          <button class="tile t-online" data-go="online" ><span class="ti" aria-hidden="true">🌐</span><b>Mabar</b><small>Main bareng teman</small></button>
+          <button class="tile t-event" data-go="events" ><span class="ti" aria-hidden="true">🏆</span><b>Event</b><small>Liga dan Piala Dunia</small></button>
+          <button class="tile t-daily" id="dailyBtn" ><span class="ti" aria-hidden="true">🎁</span><b>Hadiah Harian</b><small><span id="dailySub">Ambil koin gratis</span></small></button>
+        </div>
+      </div>
+      <div class="tabp" id="tab-shop" hidden>
+        <div class="tiles two">
+          <button class="tile t-contract" data-go="shop" ><span class="ti" aria-hidden="true">✍</span><b>Kontrak Pemain</b><small>Beli bintang dari berbagai negara</small></button>
+          <button class="tile t-daily" id="dailyBtn2" ><span class="ti" aria-hidden="true">🎁</span><b>Hadiah Harian</b><small>Ambil koin gratis</small></button>
+        </div>
+      </div>
+      <div class="tabp" id="tab-acad" hidden>
+        <div class="tiles two">
+          <button class="tile t-train" data-go="training" ><span class="ti" aria-hidden="true">🎓</span><b>Latihan</b><small>Bebas, lawan kiper, lolos dari bek</small></button>
+          <button class="tile t-how" data-go="howto" ><span class="ti" aria-hidden="true">📖</span><b>Cara bermain</b><small>Kontrol dan aturan singkat</small></button>
+        </div>
+      </div>
+      <div class="tabp" id="tab-extra" hidden>
+        <div class="tiles two">
+          <button class="tile t-team" data-go="profile" ><span class="ti" aria-hidden="true">👤</span><b>Profil</b><small>Statistik dan hasil pertandingan</small></button>
+          <button class="tile t-match" data-go="division" ><span class="ti" aria-hidden="true">🥇</span><b>Divisi</b><small>Naik rank D10 sampai D1</small></button>
+          <button class="tile t-event" data-go="events" ><span class="ti" aria-hidden="true">🏆</span><b>Event</b><small>Liga dan Piala Dunia</small></button>
+        </div>
+      </div>
+    </div>
     <div class="hintp">Putar ponsel ke landscape agar lapangan terlihat lebih luas.</div>
+  </section>
+
+  <!-- PERMAINAN -->
+  <section id="modes" class="screen sub">
+    <div class="panel wide">
+      <button class="back" data-go="lobby">‹ Kembali</button>
+      <h2 class="disp">Permainan</h2>
+      <p class="hint" id="mdTeams"></p>
+      <div class="tiles modeT">
+        <button class="tile t-match" data-go="match"><span class="ti" aria-hidden="true">⚽</span><b>Pertandingan</b><small>5 lawan 5 melawan komputer</small></button>
+        <button class="tile t-team" data-go="division"><span class="ti" aria-hidden="true">🥇</span><b>Divisi</b><small>Naik rank D10 sampai D1</small></button>
+        <button class="tile t-event" data-go="events"><span class="ti" aria-hidden="true">🏆</span><b>Event</b><small>Liga dan Piala Dunia</small></button>
+        <button class="tile t-online" data-go="online"><span class="ti" aria-hidden="true">🌐</span><b>Mabar</b><small>Lawan temanmu lewat internet</small></button>
+        <button class="tile t-train" data-go="training"><span class="ti" aria-hidden="true">🎓</span><b>Latihan</b><small>Asah dribel dan tembakan</small></button>
+      </div>
+    </div>
   </section>
 
   <!-- DIVISI -->
@@ -89,8 +127,8 @@
   <section id="teams" class="screen sub">
     <div class="panel wide">
       <button class="back" data-go="lobby">‹ Kembali</button>
-      <div class="steps"><b>1 Tim</b> · 2 Formasi · 3 Atur</div>
-      <h2>Pilih tim negara</h2>
+      <div class="steps" id="tmSteps"><b>1 Tim</b> · 2 Formasi</div>
+      <h2>Tim saya</h2>
       <div class="vs"><div class="vsside" id="vsA"></div><b>VS</b><div class="vsside" id="vsB"></div></div>
       <div class="seg" id="teamSide"><button data-v="0" class="sel">Timmu</button><button data-v="1">Lawan</button></div>
       <div class="teamgrid" id="teamGrid"></div>
@@ -102,7 +140,7 @@
   <section id="lineup" class="screen sub">
     <div class="panel wide">
       <button class="back" id="lnBack" data-go="teams">‹ Kembali</button>
-      <div class="steps" id="lnSteps">1 Tim · <b>2 Formasi</b> · 3 Atur</div>
+      <div class="steps" id="lnSteps">1 Tim · <b>2 Formasi</b></div>
       <h2>Formasi dan skuad</h2>
       <div class="lineWrap">
         <div><div id="formPrev"></div></div>
@@ -121,8 +159,8 @@
   <section id="shop" class="screen sub">
     <div class="panel wide">
       <div class="shophead"><button class="back" data-go="lobby">‹ Kembali</button><div class="coinchip"><i></i><span data-coins>0</span></div></div>
-      <h2>Toko pemain</h2>
-      <p class="hint">Nama pemain yang sudah kamu beli bisa diganti lewat tombol Ubah nama.</p>
+      <h2>Kontrak pemain</h2>
+      <p class="hint">Rekrut pemain bintang dengan koin. Pemain yang sudah dikontrak bisa dipasang di menu Tim dan diganti namanya.</p>
       <div class="chips scroll" id="shopTabs"></div>
       <div class="chips" id="shopPos" style="margin-top:8px"></div>
       <p class="hint" id="shopCount"></p>
@@ -136,16 +174,17 @@
       <button class="back" data-go="lobby">‹ Kembali</button>
       <h2>Main bareng teman</h2>
       <div id="olMenu">
-        <div class="drills">
-          <button class="mbtn" id="olHost"><b>Buat ruangan</b><small>Kamu jadi tuan rumah, lalu berikan kode ke temanmu</small></button>
-          <div class="joinrow"><input id="olCode" maxlength="4" placeholder="KODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Kode ruangan"><button class="go" id="olJoin">Gabung</button></div>
-          <button class="mbtn" id="olLocal"><b>Berdua di satu perangkat</b><small>Butuh keyboard. Pemain 1 pakai WASD, pemain 2 pakai tombol panah</small></button>
+        <div class="olHero"><b>Main bareng teman</b><small>Buat ruangan, bagikan kode 4 huruf, lalu bertanding lewat internet.</small></div>
+        <div class="olCards">
+          <div class="olCard c1"><span class="ti" aria-hidden="true">🏟</span><b>Buat ruangan</b><small>Kamu jadi tuan rumah dan memegang tim kiri.</small><button class="go" id="olHost">Buat ruangan</button></div>
+          <div class="olCard c2"><span class="ti" aria-hidden="true">🔑</span><b>Gabung</b><small>Masukkan kode dari temanmu.</small>
+            <div class="joinrow"><input id="olCode" maxlength="4" placeholder="KODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Kode ruangan"><button class="go" id="olJoin">Gabung</button></div></div>
+          <div class="olCard c3"><span class="ti" aria-hidden="true">🎮</span><b>Satu perangkat</b><small>Berdua di keyboard. P1: WASD, P2: tombol panah.</small><button class="go" id="olLocal">Main berdua</button></div>
         </div>
         <p class="hint" id="olLocalInfo"></p>
-        <p class="hint">Main online: buka halaman ini dari claude.ai lalu undang temanmu lewat menu bagikan. Teman yang bergabung harus masuk dengan akun yang diundang. Tautan publik tidak bisa dipakai untuk online.</p>
       </div>
       <div id="olRoom" hidden>
-        <div class="codebox"><small>Kode ruangan</small><b id="rmCode">----</b></div>
+        <div class="codebox"><small>Kode ruangan</small><b id="rmCode">----</b><div class="cbRow"><button class="cbtn" id="rmCopy">Salin kode</button><button class="cbtn" id="rmShare">Bagikan</button></div></div>
         <div id="rmStatus"></div>
         <div class="row"><label for="rmTeam">Timmu</label><select id="rmTeam"></select></div>
         <div class="row"><label for="rmForm">Formasi</label><select id="rmForm"></select></div>
@@ -189,9 +228,10 @@
   <!-- SETUP PERTANDINGAN -->
   <section id="match" class="screen sub">
     <div class="panel">
-      <button class="back" data-go="lineup">‹ Kembali</button>
-      <div class="steps">1 Tim · 2 Formasi · <b>3 Atur</b></div>
+      <button class="back" data-go="modes">‹ Kembali</button>
       <h2>Atur pertandingan</h2>
+      <div class="vs"><div class="vsside" id="mtA"></div><b>VS</b><div class="vsside" id="mtB"></div></div>
+      <button class="cbtn" data-go="teams" data-flag="match" style="width:100%">Ubah tim atau lawan</button>
       <div class="row"><label>Durasi</label>
         <div class="seg" data-key="dur"><button data-v="120">2 menit</button><button data-v="180">3 menit</button><button data-v="300">5 menit</button></div></div>
       <div class="row"><label>Tingkat lawan</label>
