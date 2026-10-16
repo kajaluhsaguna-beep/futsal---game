@@ -16,9 +16,9 @@ const RUN = 215, SPR = 288, DRAG = 1.15;
 
 const S = { dur: 180, diff: 1, gfx: 1, sound: true, view: 1 };
 const DIFF = [
-  { mul: .86, gk: .50, err: .20, tk: .36 },
-  { mul: .96, gk: .70, err: .12, tk: .30 },
-  { mul: 1.05, gk: .86, err: .07, tk: .24 }
+  { mul: .86, gk: .30, err: .20, tk: .36 },
+  { mul: .96, gk: .45, err: .12, tk: .30 },
+  { mul: 1.05, gk: .60, err: .07, tk: .24 }
 ];
 const MATCH = { out0: 4, gk0: true, out1: 4, gk1: true };
 const DRILLS = {
@@ -973,13 +973,13 @@ function doPass(p, dx, dy, minAl, fx, lob) {
 function doShoot(p, power, isUser) {
   const gx = p.team === 0 ? W : 0, gk = G.teams[1 - p.team].find(q => q.role === 'GK');
   let ty = CY + rand(-.5, .5) * GH * .7;
-  if (gk) ty = CY + (gk.y > CY ? -1 : 1) * GH * rand(.15, .38);
+  if (gk) ty = CY + (gk.y > CY ? -1 : 1) * GH * rand(.27, .43);
   let dx = gx - p.x, dy = ty - p.y; const dl = Math.hypot(dx, dy) || 1;
   if (isUser) {
     const ux = Math.cos(p.face), uy = Math.sin(p.face), ca = (ux * dx + uy * dy) / dl;
     if (ca > .72) { dx = lerp(ux, dx / dl, .75); dy = lerp(uy, dy / dl, .75); } else { dx = ux; dy = uy; }
   }
-  const err = (isUser ? (.05 + .14 * power * .7) : G.err * 2) * (1 - (p.shs - 3) * .1);
+  const err = (isUser ? (.035 + .08 * power * .7) : G.err * 2) * (1 - (p.shs - 3) * .1);
   const ang = Math.atan2(dy, dx) + (Math.random() - .5) * err;
   kick(p, Math.cos(ang), Math.sin(ang), (520 + 650 * power) * (1 + (p.shs - 3) * .05), 35 + 150 * power + (power > .85 ? rand(0, 110) : 0));
   SFX.kick();
@@ -1209,10 +1209,10 @@ function gkAI(p, h) {
   const incoming = !b.owner && b.vx * inw < -40;
   if (incoming) {
     const tt = (tx - b.x) / b.vx;
-    if (tt > 0 && tt < 1.3) {
-      if (g.t - p.gkErrT > 1.5) { p.gkErr = rand(-1, 1) * (1 - skill) * 95; p.gkErrT = g.t; }
+    if (tt > 0 && tt < .85) {
+      if (g.t - p.gkErrT > 1.5) { p.gkErr = rand(-1, 1) * (1 - skill) * 190; p.gkErrT = g.t; }
       const py = b.y + b.vy * tt + p.gkErr;
-      if (Math.abs(py - CY) < GH * .85) { ty = py; speed = 420 + 300 * skill; arrive = 8; }
+      if (Math.abs(py - CY) < GH * .85) { ty = py; speed = 320 + 230 * skill; arrive = 8; }
     }
   } else if (!b.owner && dist(b, p) < 270 && Math.abs(b.x - gx) < 340) {
     const rival = nearest(g.teams[1 - t], b);
@@ -1375,14 +1375,14 @@ function handleBall(h) {
     p.tk = 0;
     if (p.cd > 0 || p.stun > .2) continue;
     const gk = p.role === 'GK';
-    const reach = PR + BR + (gk ? 36 : 7) + (p.lunge > 0 ? 10 : 0), d = dist(p, b);
-    if (d < reach && b.z < (gk ? 58 : 22) && d < bd) { bd = d; best = p; }
+    const reach = PR + BR + (gk ? 22 : 7) + (p.lunge > 0 ? 10 : 0), d = dist(p, b);
+    if (d < reach && b.z < (gk ? 48 : 22) && d < bd) { bd = d; best = p; }
   }
   if (!best) return;
   if (best.role === 'GK') {
     // kiper langsung menangkap bola; hanya tembakan sangat kencang yang kadang cuma ditepis
     const sk = best.team === 1 ? g.gkSkill : .75;
-    if (g.t - (best.gkRT || -9) > .5) { best.gkRT = g.t; best.gkOK = bs < 700 || Math.random() < clamp(1.6 - bs / 900 + (sk - .6) * .5, .2, 1); }
+    if (g.t - (best.gkRT || -9) > .5) { best.gkRT = g.t; best.gkOK = bs < 480 || Math.random() < clamp(1.25 - bs / 700 + (sk - .6) * .5, .08, 1); }
     if (best.gkOK) { take(best); SFX.save(); if (S.gfx) spark(b.x, b.y, 6, '#c8ff3a'); }
     else {
       const inw = best.team === 0 ? 1 : -1;
